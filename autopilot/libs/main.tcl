@@ -34,7 +34,7 @@ set db_log nullmessage
 set db_set_password null
 set db_close null
 set db_new_game nullmessage
-set gui_say nullmessage
+set ::gui_say nullmessage
 set gui_close null
 
 # Procedure for getting the version of the game.  Runs new, so only
@@ -57,7 +57,7 @@ proc get_setting {section var} {
 }
 
 # Load the language file
-source lang_[get_setting autopilot language].tcl
+source autopilot/lang/[get_setting autopilot language].tcl
 
 # Page the admin by email
 proc page_admin name {

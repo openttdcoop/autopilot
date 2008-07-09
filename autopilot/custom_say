@@ -1,0 +1,4 @@
+Custom chat message using say_everywhere
+each line is sent separately
+and may contain string replacements
+ap+ is currently hosting OTTD

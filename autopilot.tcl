@@ -22,6 +22,9 @@ exec tclsh $0 $@
 package require Expect
 log_user 0
 
+set pidfile autopilot.pid
+exec echo [ pid ] > $pidfile
+
 # Decide which config file we're using; either set by environment, or default.
 set inifilename openttd.cfg
 if [info exists env(OTTD_CONFIG)] {
@@ -60,25 +63,29 @@ if {![info exists ::apconfig::autopilot]} {
 }
 
 # Fetch in our library of functions
-source autopilot-lib.tcl
+source autopilot/libs/main.tcl
 
 # Check the config, and include support for extra features
 if {[setting_enabled [get_setting autopilot use_irc]]} {
-   source autopilot-irc.tcl
+	source autopilot/libs/irc.tcl
 } else {
-   # We use this variable in this file, so we explicitly set it
-   # if there is no IRC code
-   namespace eval apirc {set bridge 0}
+	# We use this variable in this file, so we explicitly set it
+	# if there is no IRC code
+	namespace eval apirc {set bridge 0}
 }
 
 if {[setting_enabled [get_setting autopilot use_mysql]]} {
-   source autopilot-mysql.tcl
+	source autopilot/libs/mysql.tcl
+}
+
+if {[setting_enabled [get_setting autopilot use_signals]]} {
+	source autopilot/libs/signals.tcl
 }
 
 if {[setting_enabled [get_setting autopilot use_gui]]} {
-   source autopilot-gui.tcl
-   # Wait for the GUI to actually become visible
-   tkwait vis .
+	source autopilot/libs/gui.tcl
+	# Wait for the GUI to actually become visible
+	tkwait vis .
 }
 
 # Three ways to start the game - new, load default, load specified
@@ -423,3 +430,4 @@ namespace eval mainloop {
 
 $gui_close
 $db_close
+exec echo {} > $pidfile
