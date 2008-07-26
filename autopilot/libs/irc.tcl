@@ -210,16 +210,16 @@ proc join_irc {} {
    }
 }
 
+proc quit_irc {} {
+   if {[$::irc connected]} {
+      $::irc quit
+   }
+}
+
 # Join our channel if we see any invite
 
 $irc registerevent INVITE {
    $::irc join $::apirc::channel
-}
-
-# Reconnect if we get cut off
-
-$irc registerevent EOF {
-   join_irc
 }
 
 join_irc

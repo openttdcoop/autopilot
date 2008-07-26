@@ -1,3 +1,7 @@
+if {[setting_enabled [get_setting autopilot use_irc]]} {
+	quit_irc
+}
+
 # Fetch in our library of functions
 source autopilot/libs/main.tcl
 
