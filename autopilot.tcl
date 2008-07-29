@@ -43,12 +43,12 @@ namespace eval mainloop {
 # Read in values from openttd.cfg
 # namespace apconfig contains only configuration lists
 namespace eval apconfig {
-   set inifile [open $inifilename r]
+   variable inifile [open $inifilename r]
    while {-1 != [gets $inifile line]} {
       if {[string length $line] > 0 && [string first \# $line] != 0} {
          if [string match {\[*\]} $line] {
-            set section "[string map {{[} {} {]} {}} $line]"
-            set $section {}
+            variable section "[string map {{[} {} {]} {}} $line]"
+            variable $section {}
          } {
             lappend $section [join [split $line =]]
          }
