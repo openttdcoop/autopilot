@@ -29,7 +29,6 @@ namespace eval ::gui {
 # Set default procedures for messages - these are overridden
 # by setting the variables to other procedures, normally from
 # within an include file.
-set irc_say nullmessage
 set db_log nullmessage
 set db_set_password null
 set db_close null
@@ -124,24 +123,28 @@ proc ds_sanitize message {
 
 # Output a message to the console and IRC
 proc ds_output message {
-   puts $message
-   $::gui_say $message
-   $::irc_say $message
+	puts $message
+	$::gui_say $message
+	if {[namespace exists mod_irc]} {
+		::mod_irc::say::channel $message
+	}
 }
 
 # Send a message to all channels but the game
 proc say_from_game message {
    $::gui_say $message
-   if $::apirc::bridge {
-      $::irc_say $message
-   }
+	if {[namespace exists mod_irc]} {
+		::mod_irc::say::channel $message
+	}
    $::db_log $message
 }
 
 # Send a message to all available channels
 proc say_everywhere message {
    say_game $message
-   $::irc_say $message
+	if {[namespace exists mod_irc]} {
+		::mod_irc::say::channel $message
+	}
    $::db_log $message
    $::gui_say $message
 }
