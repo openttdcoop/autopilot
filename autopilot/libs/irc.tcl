@@ -55,6 +55,24 @@ namespace eval mod_irc {
 		}
 	}
 
+	namespace eval do {
+
+		# how to do an irc action (private or public)
+		proc action {target message} {
+			variable message "\001ACTION $message\001"
+			if {[::mod_irc::chatisPrivate $target]} {
+				::mod_irc::say::private $target $message
+			} else {
+				::mod_irc::say::channel $message
+			}
+		}
+
+		# how to do a ctcp reply
+		proc ctcpReply {target type message} {
+			::mod_irc::say::notice $target "\001[string toupper $type] $message\001"
+		}
+	}
+
 	namespace eval network {
 
 		# how to connect to a server
@@ -66,7 +84,7 @@ namespace eval mod_irc {
 				after 5000 ::mod_irc::connect
 			} else {
 				puts $::lang::irc_connected
-				$::mod_irc::irc user $::mod_irc::config::user localhost domain "autopilot $::version"
+				$::mod_irc::irc user $::mod_irc::config::user localhost domain "$::version"
 				$::mod_irc::irc nick $::mod_irc::config::nick
 				
 				# identify with nickserv if required
@@ -181,6 +199,14 @@ namespace eval mod_irc {
 		return [string equal $target $::mod_irc::config::nick]
 	}
 	
+	proc isCTCP {message} {
+		if {[string first "\001" $message] > -1 && [string last "\001" $message] > -1} {
+			return true
+		} else {
+			return false
+		}
+	}
+	
 	# register some callback events
 	
 	# response from NAMES command
@@ -199,6 +225,11 @@ namespace eval mod_irc {
 		::mod_irc::network::names [target]
 	}
 	
+	# catch nickchanges and update the internal list of op's
+	$::mod_irc::irc registerevent NICK {
+		::mod_irc::network::names [target]
+	}
+	
 	# catch kick
 	$::mod_irc::irc registerevent KICK {
 		after $::standard_delay [string map "CHANNEL [target]" "::mod_irc::network::join CHANNEL"]
@@ -211,7 +242,14 @@ namespace eval mod_irc {
 	
 	# catch PRIVMSG (this can be private to ap or to the channel...)
 	$irc registerevent PRIVMSG {
-		if {[string first $::mod_irc::config::commandchar [msg]] == 0 || [::mod_irc::chatIsPrivate [target]]} {
+		variable isPrivate [::mod_irc::chatIsPrivate [target]]
+		
+		if {$isPrivate && [::mod_irc::isCTCP [msg]]} {
+			if {[string match "\001VERSION\001" [msg]]} {
+				::mod_irc::do::ctcpReply [who] {version} $::version
+			}
+			# no need to continue processing!
+		} elseif {[string first $::mod_irc::config::commandchar [msg]] == 0 || $isPrivate} {
 			
 			# get the bang command
 			set bang_command [split [msg]]
@@ -220,9 +258,9 @@ namespace eval mod_irc {
 			}
 			
 			# how to reply
-			set replyto "::mod_irc::say::channel"
-			if {[::mod_irc::chatIsPrivate [target]]} {
-				set replyto "::mod_irc::say::private [who]"
+			variable replyto "::mod_irc::say::channel"
+			if {$isPrivate} {
+				variable replyto "::mod_irc::say::private [who]"
 				# also use this moment to output to console about the event!
 				puts [string map {\001 *} "IRC PM from [who]: [msg]"]
 			}
@@ -230,7 +268,7 @@ namespace eval mod_irc {
 			# prioritise the responses from the config file
 			set bang_command_incomplete true
 			foreach response $::apconfig::responses {
-				if {[string range [lindex $bang_command 0] 1 end] == "[lindex $response 0]"} {
+				if {[lindex $bang_command 0] == "[lindex $response 0]"} {
 					$replyto [map_strings [lrange $response 1 end]]
 					set bang_command_incomplete false
 				}
@@ -240,11 +278,13 @@ namespace eval mod_irc {
 				# Built-in !bang-commands which can be overriden
 				case [lindex $bang_command 0] {
 					{version} {
-						$::irc_say [map_strings "autopilot VERSION"]
+						$replyto $::version
 					}
 					{say} {
 						say_game "<[who]> [join [lrange $bang_command 1 end]]"
-						$::db_log "$::mod_irc::config::channel/[who]: [join [lrange $bang_command 1 end]]"
+						if {[namespace exists ::mod_db]} {
+							::mod_db::log "$::mod_irc::config::channel/[who]: [join [lrange $bang_command 1 end]]"
+						}
 					}
 					{save} {
 						say_everywhere $::lang::saving_game
@@ -270,11 +310,13 @@ namespace eval mod_irc {
 					}
 					{rcon} {
 						if {[setting_enabled [get_setting autopilot irc_rcon]]} {
+							puts "\[AP\] rcon via irc from [who]"
 							if {[::mod_irc::nickIsOp [who]]} {
 								exp_send -i $::ds "[join [lrange $bang_command 1 end]]\r"
-							} elseif {[::mod_irc::chatIsPrivate [target]] && [lindex $bang_command 1] == [get_setting network rcon_password]} {
+							} elseif {$isPrivate && [lindex $bang_command 1] == [get_setting network rcon_password]} {
 								exp_send -i $::ds "[join [lrange $bang_command 1 end]]\r"
 							} else {
+								puts "\[AP\] rcon via irc from [who] not accepted!"
 								::mod_irc::say::channel "[who]: you are not allowed to use this command"
 							}
 						}
@@ -287,10 +329,16 @@ namespace eval mod_irc {
 				if { [regexp {^\001ACTION (.+)\001$} [msg] -> msg] } {
 					say_game "* [who] $msg"
 					$::gui_say "* [who] $msg"
+					if {[namespace exists ::mod_db]} {
+						::mod_db::log "$::mod_irc::config::channel:* [who] $msg"
+					}
 				}
 			} else {
 				say_game "<[who]> [msg]"
 				$::gui_say "<[who]> [msg]"
+				if {[namespace exists ::mod_db]} {
+					::mod_db::log "$::mod_irc::config::channel/[who]: [msg]"
+				}
 			}
 		}
 	}

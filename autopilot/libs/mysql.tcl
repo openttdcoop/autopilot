@@ -18,51 +18,89 @@
 puts $::lang::load_mysql_module
 package require mysqltcl
 
-# Set database table prefix
-set db_prefix [get_setting autopilot mysql_prefix]
-append tbl_chatlog $db_prefix {chatlog}
-append tbl_game    $db_prefix {game}
-append tbl_setup   $db_prefix {setup}
-append tbl_server  $db_prefix {server}
-append tbl_user    $db_prefix {user}
+namespace eval mod_db {
+	
+	variable db {}
+	
+	namespace eval config {
+		variable host   [get_setting autopilot mysql_server]
+		variable user   [get_setting autopilot mysql_user]
+		variable pass   [get_setting autopilot mysql_pass]
+		variable db     [get_setting autopilot mysql_database]
+		variable prefix [get_setting autopilot mysql_prefix]
+		
+		variable server [get_setting autopilot mysql_gameserver]
+		variable game   {}
+	}
+	
+	namespace eval table {
+		variable chatlog $::mod_db::config::prefix
+		variable game    $::mod_db::config::prefix
+		variable setup   $::mod_db::config::prefix
+		variable server  $::mod_db::config::prefix
+		variable user    $::mod_db::config::prefix
+		
+		append chatlog chatlog
+		append game    game
+		append setup   setup
+		append server  server
+		append user    user
+	}
+	
+	proc connect {} {
+		set ::mod_db::db [::mysql::connect -host $::mod_db::config::host -user $::mod_db::config::user -password $::mod_db::config::pass -db $::mod_db::config::db]
+	}
+	
+	proc disconnect {} {
+		::mysql::close $::mod_db::db
+	}
+	
+	proc escape {message} {
+		return [::mysql::escape $::mod_db::db $message]
+	}
+	
+	proc execute {sql} {
+		::mysql::exec $::mod_db::db $sql
+	}
+	
+	proc select {sql} {
+		return [::mysql::sel $::mod_db::db $sql -flatlist]
+	}
+	
+	proc init {} {
+		variable sql "SELECT value FROM $::mod_db::table::setup WHERE setting='current_game' AND server=$::mod_db::config::server"
+		set ::mod_db::config::game [::mod_db::select $sql]
+		
+		variable sql "REPLACE INTO $::mod_db::table::server SET id=$::mod_db::config::server, name='[::mod_db::escape [get_setting network server_name]]'"
+		::mod_db::execute $sql
+	}
+	
+	proc log {message} {
+		variable sql "INSERT INTO $::mod_db::table::chatlog SET game=$::mod_db::config::game, log='[::mod_db::escape $message]'"
+		::mod_db::execute $sql
+	}
+	
+	proc set_password {password} {
+		variable sql "REPLACE INTO $::mod_db::table::setup SET value='[::mod_db::escape $password]', server=$::mod_db::config::server, setting='password'"
+		::mod_db::execute $sql
+	}
 
-# Connect to database
-set autopilot_db [::mysql::connect -host [get_setting autopilot mysql_server] -user [get_setting autopilot mysql_user] -password [get_setting autopilot mysql_pass] -db [get_setting autopilot mysql_database]]
+	proc newgame title {
+		variable name [::mod_db::escape "[get_setting network server_name] [clock format [clock seconds] -format %D-%T]"]
+		variable sql "INSERT INTO $::mod_db::table::game SET name='$name', server=$::mod_db::config::server"
+		::mod_db::execute $sql
+		
+		set ::mod_db::config::game [::mysql::insertid $::mod_db::db]
+		variable sql "REPLACE INTO $::mod_db::table::setup SET value='$::mod_db::config::game', server=$::mod_db::config::server, setting='current_game'"
+		::mod_db::execute $sql
+	}
 
-set db_gameserver [get_setting autopilot mysql_gameserver]
-set sql "SELECT value FROM $tbl_setup WHERE setting='current_game' AND server=$db_gameserver"
-set db_gamenumber [::mysql::sel $autopilot_db $sql -flatlist]
-set sql "REPLACE INTO `$tbl_server` SET `id`=$::db_gameserver, `name`=\'[::mysql::escape $::autopilot_db [get_setting network server_name]]\'"
-::mysql::exec $autopilot_db $sql
-
-set db_log db_log_internal
-set db_set_password db_set_password_internal
-set db_close db_close_internal
-set db_new_game db_new_game_internal
-
-every 1800000 {
-   ::mysql::ping $::autopilot_db
-}
-
-proc db_log_internal message {
-   set sql "INSERT INTO `$::tbl_chatlog` SET `game`=$::db_gamenumber, `log`='[::mysql::escape $::autopilot_db $message]'"
-   mysqlexec $::autopilot_db $sql
-}
-
-proc db_set_password_internal {} {
-   set sql "REPLACE INTO `$::tbl_setup` SET `value`=\'[::mysql::escape $::autopilot_db $::password]\', `server`=$::db_gameserver, `setting`='password'"
-   mysqlexec $::autopilot_db $sql
-}
-
-proc db_close_internal {} {
-   ::mysql::close $::autopilot_db
-}
-
-proc db_new_game_internal title {
-   set name [::mysql::escape $::autopilot_db "[get_setting network server_name] [clock format [clock seconds] -format %D-%T]"]
-   set sql "INSERT INTO `$::tbl_game` SET `name`=\'$name\', `server`=$::db_gameserver"
-   mysqlexec $::autopilot_db $sql
-   set ::db_gamenumber [::mysql::insertid $::autopilot_db]
-   set sql "REPLACE INTO `$::tbl_setup` SET `value`=\'$::db_gamenumber\', `server`=$::db_gameserver, `setting`='current_game'"
-   mysqlexec $::autopilot_db $sql
+	# connect before we start pining ;-)
+	::mod_db::connect
+	::mod_db::init
+	
+	# have a little keep-alive ;-)
+	every 1800000 {
+		::mysql::ping $::mod_db::db
+	}
 }

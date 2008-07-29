@@ -29,7 +29,6 @@ namespace eval ::gui {
 # Set default procedures for messages - these are overridden
 # by setting the variables to other procedures, normally from
 # within an include file.
-set db_log nullmessage
 set db_set_password null
 set db_close null
 set db_new_game nullmessage
@@ -136,7 +135,9 @@ proc say_from_game message {
 	if {[namespace exists mod_irc]} {
 		::mod_irc::say::channel $message
 	}
-   $::db_log $message
+    if {[namespace exists ::mod_db]} {
+		::mod_db::log $message
+    }
 }
 
 # Send a message to all available channels
@@ -145,7 +146,9 @@ proc say_everywhere message {
 	if {[namespace exists mod_irc]} {
 		::mod_irc::say::channel $message
 	}
-   $::db_log $message
+    if {[namespace exists ::mod_db]} {
+		::mod_db::log $message
+    }
    $::gui_say $message
 }
 

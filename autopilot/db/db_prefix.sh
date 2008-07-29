@@ -6,4 +6,4 @@
 # Free to use and distribute.  No warranty.
 # If this breaks, you get to keep all the pieces.
 
-sed "s/CREATE TABLE IF NOT EXISTS \`/CREATE TABLE IF NOT EXISTS \`$1/" < autopilot.sql > $1autopilot.sql
+sed "s/CREATE TABLE IF NOT EXISTS \`/CREATE TABLE IF NOT EXISTS \`$1/" < mysql.sql > $1mysql.sql

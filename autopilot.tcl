@@ -34,7 +34,7 @@ if [info exists env(OTTD_CONFIG)] {
 # Our version - if you modify and redistribute, please change this
 # string to reflect the fact that this autopilot isn't the original
 # autopilot by Brian Ronald.
-set version {2.0.4 (+SVN changes) Copyright © Brian Ronald, 2006}
+set version {autopilot ap+ 3.0 beta}
 
 namespace eval mainloop {
    # Do nothing; just make the namespace
@@ -120,7 +120,10 @@ if { [ string equal "$arg1" "load" ] } {
          ds_output [format $::lang::start_year [get_setting patches starting_date]]
       }
    }
-   $db_new_game [get_setting network server_name]
+   
+   if {[namespace exists ::mod_db]} {
+		::mod_db::newgame [get_setting network server_name]
+   }
 }
 
 # Get the version
@@ -145,7 +148,9 @@ if {[setting_enabled [get_setting autopilot randomize_password]]} {
    set password [get_setting network server_password]
 }
 
-$db_set_password
+if {[namespace exists ::mod_db]} {
+   ::mod_db::set_password $::password
+}
 
 # Set some expect variables
 set spawn_id $ds
@@ -348,7 +353,9 @@ namespace eval mainloop {
                   }
                   if {[string first "'server_pw' changed to:  " $linestr] == 0} {
                      set ::password [lindex $line 4]
-                     $db_set_password
+                     if {[namespace exists ::mod_db]} {
+                        ::mod_db::set_password $::password
+                     }
                   }
                   if {[regexp "^Client.*unique-id: '\[0-9,a-f\]*'\$" $linestr]} {
                      # We're discarding output from status
@@ -425,5 +432,7 @@ namespace eval mainloop {
 }
 
 $gui_close
-$db_close
+if {[namespace exists ::mod_db]} {
+   ::mod_db::disconnect
+}
 exec echo {} > $pidfile
