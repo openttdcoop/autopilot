@@ -321,6 +321,19 @@ namespace eval mod_irc {
 							}
 						}
 					}
+					{default} {
+						variable filename "[lindex $bang_command 0].tcl"
+						
+						if {[file exists "autopilot/scripts/irc/$filename"]} {
+							source "autopilot/scripts/irc/$filename"
+						} elseif {[file exists "autpilot/scripts/global/$filename"]} {
+							source "autopilot/scripts/global/$filename"
+						} else {
+							puts "no such file found:"
+							puts "autopilot/scripts/irc/$filename"
+							puts "autopilot/scripts/global/$filename"
+						}
+					}
 				}
 			}
 		}  elseif {$::mod_irc::config::bridge && !$::mod_irc::config::explicit_say} {
