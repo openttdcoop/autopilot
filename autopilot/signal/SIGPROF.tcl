@@ -5,7 +5,7 @@ set lines [split $content "\n"]
 
 foreach line $lines {
 	if {[string length $line] > 0} {
-		exp_send -i $::ds [map_strings "$line\n"]
+		::ap::game::console [::ap::func::map_strings "$line\r"]
 	}
 }
 

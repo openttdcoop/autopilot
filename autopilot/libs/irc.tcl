@@ -27,14 +27,14 @@ namespace eval mod_irc {
 
 	# config
 	namespace eval config {
-		set server [get_setting autopilot irc_server]
-		set port [get_setting autopilot irc_port]
-		set user [get_setting autopilot irc_user]
-		set nick [get_setting network player_name]
-		set channel [get_setting autopilot irc_channel]
-		set commandchar [get_setting autopilot irc_commandchar]
-		if [setting_enabled [get_setting autopilot irc_bridge]] { set bridge 1 } {set bridge 0}
-		if [setting_enabled [get_setting autopilot irc_explicit_say]] { set explicit_say 1 } {set explicit_say 0 }
+		set server [::ap::config::get autopilot irc_server]
+		set port [::ap::config::get autopilot irc_port]
+		set user [::ap::config::get autopilot irc_user]
+		set nick [::ap::config::get network player_name]
+		set channel [::ap::config::get autopilot irc_channel]
+		set commandchar [::ap::config::get autopilot irc_commandchar]
+		if [::ap::config::isEnabled autopilot irc_bridge] { set bridge 1 } {set bridge 0}
+		if [::ap::config::isEnabled autopilot irc_explicit_say] { set explicit_say 1 } {set explicit_say 0 }
 	}
 
 	# means of communicating with people on irc
@@ -68,7 +68,7 @@ namespace eval mod_irc {
 		# how to do an irc action (private or public)
 		proc action {target message} {
 			variable message "\001ACTION $message\001"
-			if {[::mod_irc::chatisPrivate $target]} {
+			if {[::mod_irc::chatIsPrivate $target]} {
 				::mod_irc::say::private $target $message
 			} else {
 				::mod_irc::say::channel $message
@@ -88,15 +88,15 @@ namespace eval mod_irc {
 			set code [catch {$::mod_irc::irc connect $::mod_irc::config::server $::mod_irc::config::port}]
 			if {$code} {
 				# connection failed
-				puts "$code: $::lang::irc_connect_fail"
-				after 5000 ::mod_irc::connect
+				::ap::debug [namespace current] "$code: $::lang::irc_connect_fail"
+				after 5000 ::mod_irc::network::connect
 			} else {
-				puts $::lang::irc_connected
+				::ap::debug [namespace current] $::lang::irc_connected
 				$::mod_irc::irc user $::mod_irc::config::user localhost domain "$::version"
 				$::mod_irc::irc nick $::mod_irc::config::nick
 				
 				# identify with nickserv if required
-				set nickservtask [get_setting autopilot irc_nickserv]
+				set nickservtask [::ap::config::get autopilot irc_nickserv]
 				if {$nickservtask != {}} {
 					$::mod_irc::irc send $nickservtask
 				}
@@ -169,7 +169,7 @@ namespace eval mod_irc {
 		proc player_list {target nick} {
 			variable strmap "NICK     $nick
 						PRIVATE  [::mod_irc::chatIsPrivate $target]"
-			player_count
+			::ap::count::players
 			after $::standard_delay [string map $strmap {
 				# Wait a second to allow the Expect to pick up the result from clients
 				foreach {number} [array names ::mainloop::player] {
@@ -255,14 +255,14 @@ namespace eval mod_irc {
 			
 			if {$isPrivate} {
 				# also use this moment to output to console about the event!
-				puts [string map {\001 *} "IRC PM from [who]: [msg]"]
+				::ap::debug [namespace parent] [string map {\001 *} "IRC PM from [who]: [msg]"]
 			}
 			
 			# prioritise the responses from the config file
 			set bang_command_incomplete true
-			foreach response $::apconfig::responses {
+			foreach response $::ap::config::responses {
 				if {[lindex $bang_command 0] == "[lindex $response 0]"} {
-					::mod_irc::say::reply $isPrivate [who] [map_strings [lrange $response 1 end]]
+					::mod_irc::say::reply $isPrivate [who] [::ap::func::map_strings [lrange $response 1 end]]
 					set bang_command_incomplete false
 				}
 			}
@@ -274,14 +274,14 @@ namespace eval mod_irc {
 						::mod_irc::say::reply $isPrivate [who] $::version
 					}
 					{say} {
-						say_game "<[who]> [join [lrange $bang_command 1 end]]"
+						::ap::say::toGame "<[who]> [join [lrange $bang_command 1 end]]"
 						if {[namespace exists ::mod_db]} {
 							::mod_db::log "$::mod_irc::config::channel/[who]: [join [lrange $bang_command 1 end]]"
 						}
 					}
 					{save} {
-						say_everywhere $::lang::saving_game
-						exp_send -i $::ds "save game\r"
+						::ap::say::everywhere $::lang::saving_game
+						::ap::game::save
 					}
 					{newgrf} {
 						::mod_irc::tell::newgrf_list [target] [who]
@@ -302,15 +302,15 @@ namespace eval mod_irc {
 						}
 					}
 					{rcon} {
-						if {[setting_enabled [get_setting autopilot irc_rcon]]} {
+						if {[::ap::config::isEnabled autopilot irc_rcon]} {
 							puts "\[AP\] rcon via irc from [who]"
 							if {[::mod_irc::nickIsOp [who]]} {
-								exp_send -i $::ds "[join [lrange $bang_command 1 end]]\r"
-							} elseif {$isPrivate && [lindex $bang_command 1] == [get_setting network rcon_password]} {
-								exp_send -i $::ds "[join [lrange $bang_command 1 end]]\r"
+								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
+							} elseif {$isPrivate && [lindex $bang_command 1] == [::ap::config::get network rcon_password]} {
+								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
 							} else {
 								puts "\[AP\] rcon via irc from [who] not accepted!"
-								::mod_irc::say::channel "[who]: you are not allowed to use this command"
+								::mod_irc::say::channel "[who]: you are not allowed to use !rcon"
 							}
 						}
 					}
@@ -321,10 +321,6 @@ namespace eval mod_irc {
 							source "autopilot/scripts/irc/$filename"
 						} elseif {[file exists "autpilot/scripts/global/$filename"]} {
 							source "autopilot/scripts/global/$filename"
-						} else {
-							puts "no such file found:"
-							puts "autopilot/scripts/irc/$filename"
-							puts "autopilot/scripts/global/$filename"
 						}
 					}
 				}
@@ -333,15 +329,13 @@ namespace eval mod_irc {
 			# Just a general chat
 			if { [string match "\001*\001" [msg]] } {
 				if { [regexp {^\001ACTION (.+)\001$} [msg] -> msg] } {
-					say_game "* [who] $msg"
-					$::gui_say "* [who] $msg"
+					::ap::say::toGame "* [who] $msg"
 					if {[namespace exists ::mod_db]} {
 						::mod_db::log "$::mod_irc::config::channel:* [who] $msg"
 					}
 				}
 			} else {
-				say_game "<[who]> [msg]"
-				$::gui_say "<[who]> [msg]"
+				::ap::say::toGame "<[who]> [msg]"
 				if {[namespace exists ::mod_db]} {
 					::mod_db::log "$::mod_irc::config::channel/[who]: [msg]"
 				}

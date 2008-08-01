@@ -1,7 +1,7 @@
-exp_send -i $::ds "pause\n"
+::ap::game::pause
 
-say_everywhere [map_strings "Server is going down for..."]
-say_everywhere [map_strings "Thank you for playing OTTD."]
+::ap::say::everywhere [::ap::func::map_strings "Server is going down for..."]
+::ap::say::everywhere [::ap::func::map_strings "Thank you for playing OTTD."]
 
-exp_send -i $::ds [map_strings "save autosave/OTTD_exit\n"]
-exp_send -i $::ds "quit\n"
+::ap::game::save [::ap::func::map_strings "autosave/OTTD_exit"]
+::ap::game::quit

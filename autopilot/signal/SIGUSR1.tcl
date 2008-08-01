@@ -1,2 +1,2 @@
-say_everywhere "Pausing the Game"
-exp_send -i $::ds {pause\n}
+::ap::say::everywhere "Pausing the Game"
+::ap::game::pause

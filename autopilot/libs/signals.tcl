@@ -25,6 +25,27 @@ puts "Loading Signal Handling\n"
 # a list of signals we will handle
 set signals [list SIGALRM SIGHUP SIGPOLL SIGPROF SIGTERM SIGUSR1 SIGUSR2 SIGCONT SIGABRT SIGILL SIGQUIT]
 
+proc getsignals {} {
+	variable sigs {}
+	variable blocked {}
+	
+	foreach sig [signal get *] {
+		lappend sigs [lindex $sig 0]
+	}
+	
+	foreach sig $::signals {
+		
+		if {[lsearch -exact $sigs $sig] == -1} {
+			variable index [lsearch $::signals $sig]
+			lappend blocked $sig
+			set ::signals [lreplace $::signals $index $index]
+		}
+	}
+	
+	::ap::debug WARNING "unsupported signals: $blocked"
+	return $::signals
+}
+
 proc sigsource {filename} {
 	set signalfile "autopilot/signal/$filename"
 	if {[file exists $signalfile]} {
@@ -78,4 +99,4 @@ proc sig_SIGQUIT {} {
 	sigsource SIGQUIT.tcl
 }
 
-signal trap $signals sig_%S
+signal trap [getsignals] sig_%S

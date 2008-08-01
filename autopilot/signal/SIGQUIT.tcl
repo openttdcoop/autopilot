@@ -1,5 +1,5 @@
-say_everywhere {Scheduled quit for automated maintenance... will be back shortely}
-say_everywhere [map_strings "Thank you for playing OTTD."]
+::ap::say::everywhere {Scheduled quit for automated maintenance... will be back shortely}
+::ap::say::everywhere [map_strings "Thank you for playing OTTD."]
 
-exp_send -i $::ds [map_strings "save autosave/OTTD_exit\n"]
-exp_send -i $::ds "quit\n"
+::ap::game::save [map_strings "save autosave/OTTD_exit"]
+::ap::game::quit

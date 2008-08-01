@@ -5,7 +5,7 @@ set lines [split $content "\n"]
 
 foreach line $lines {
 	if {[string length $line] > 0} {
-		say_everywhere [map_strings $line]
+		::ap::say::everywhere [::ap::func::map_strings $line]
 	}
 }
 
