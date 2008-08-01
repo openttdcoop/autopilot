@@ -53,6 +53,14 @@ namespace eval mod_irc {
 		proc private {nick message} {
 			$::mod_irc::irc send "PRIVMSG $nick :$message"
 		}
+		
+		proc reply {inPrivate nick message} {
+			if {$inPrivate} {
+				::mod_irc::say::private $nick $message
+			} else {
+				::mod_irc::say::channel $message
+			}
+		}
 	}
 
 	namespace eval do {
@@ -130,16 +138,10 @@ namespace eval mod_irc {
 			# Wait a second to allow the Expect to pick up the result from players
 			after $::standard_delay [string map "NICK $nick
 						PRIVATE $private" {
-				if {PRIVATE} {
-					set replyto "::mod_irc::say::private NICK"
-				} else {
-					set replyto "::mod_irc::say::channel"
-				}
-				
 				for {set i 1} {$i <= $::max_companies} {incr i} {
 					# we only want the company if founding date > 1
 					if {[lindex $::mainloop::company($i) 3] > 1} {
-						$replyto [format {Company %d (%s): %s} $i [lindex $::mainloop::company($i) 0] [lindex $::mainloop::company($i) 1]]
+						::mod_irc::say::reply PRIVATE NICK [format {Company %d (%s): %s} $i [lindex $::mainloop::company($i) 0] [lindex $::mainloop::company($i) 1]]
 					}
 				}
 			}]
@@ -170,17 +172,11 @@ namespace eval mod_irc {
 			player_count
 			after $::standard_delay [string map $strmap {
 				# Wait a second to allow the Expect to pick up the result from clients
-				if {PRIVATE} {
-					set replyto "::mod_irc::say::private NICK"
-				} else {
-					set replyto "::mod_irc::say::channel"
-				}
-				
 				foreach {number} [array names ::mainloop::player] {
 					if {[lindex $::mainloop::player($number) 1] > $max_companies} {
-						$replyto [format {Player %d is %s, a spectator} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
+						::mod_irc::say::reply PRIVATE NICK [format {Player %d is %s, a spectator} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
 					} else {
-						$replyto [format {Player %d (%s) is %s, in company %d (%s)} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 0] [lindex $::mainloop::player($number) 0] [lindex $::mainloop::player($number) 1] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 1]]
+						::mod_irc::say::reply PRIVATE NICK [format {Player %d (%s) is %s, in company %d (%s)} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 0] [lindex $::mainloop::player($number) 0] [lindex $::mainloop::player($number) 1] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 1]]
 					}
 				}
 			}]
@@ -257,10 +253,7 @@ namespace eval mod_irc {
 				set bang_command [string range $bang_command 1 end]
 			}
 			
-			# how to reply
-			variable replyto "::mod_irc::say::channel"
 			if {$isPrivate} {
-				variable replyto "::mod_irc::say::private [who]"
 				# also use this moment to output to console about the event!
 				puts [string map {\001 *} "IRC PM from [who]: [msg]"]
 			}
@@ -269,7 +262,7 @@ namespace eval mod_irc {
 			set bang_command_incomplete true
 			foreach response $::apconfig::responses {
 				if {[lindex $bang_command 0] == "[lindex $response 0]"} {
-					$replyto [map_strings [lrange $response 1 end]]
+					::mod_irc::say::reply $isPrivate [who] [map_strings [lrange $response 1 end]]
 					set bang_command_incomplete false
 				}
 			}
@@ -278,7 +271,7 @@ namespace eval mod_irc {
 				# Built-in !bang-commands which can be overriden
 				case [lindex $bang_command 0] {
 					{version} {
-						$replyto $::version
+						::mod_irc::say::reply $isPrivate [who] $::version
 					}
 					{say} {
 						say_game "<[who]> [join [lrange $bang_command 1 end]]"
