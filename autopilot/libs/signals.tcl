@@ -20,83 +20,50 @@
 # to get hold of the signal function
 package require Tclx
 
-puts "Loading Signal Handling\n"
-
-# a list of signals we will handle
-set signals [list SIGALRM SIGHUP SIGPOLL SIGPROF SIGTERM SIGUSR1 SIGUSR2 SIGCONT SIGABRT SIGILL SIGQUIT]
-
-proc getsignals {} {
-	variable sigs {}
-	variable blocked {}
+namespace eval ::ap::signals {
 	
-	foreach sig [signal get *] {
-		lappend sigs [lindex $sig 0]
+	# list of supported signals
+	variable list [list SIGALRM SIGHUP SIGPOLL SIGPROF SIGTERM SIGUSR1 SIGUSR2 SIGCONT SIGABRT SIGILL SIGQUIT]
+	
+	proc getlist {} {
+		variable supported {}
+		variable ignored {}
+		
+		# get a list of supported signals
+		foreach sig [signal get *] {
+			lappend supported [lindex $sig 0]
+		}
+		
+		# filter
+		foreach sig $::ap::signals::list {
+			
+			if {[lsearch -exact $supported $sig] == -1} {
+				variable index [lsearch $::ap::signals::list $sig]
+				lappend ignored $sig
+				set ::ap::signals::list [lreplace $::ap::signals::list $index $index]
+			}
+		}
+		
+		::ap::debug [namespace current] "WARNING: ignoring signals $ignored"
+		return $::ap::signals::list
 	}
 	
-	foreach sig $::signals {
-		
-		if {[lsearch -exact $sigs $sig] == -1} {
-			variable index [lsearch $::signals $sig]
-			lappend blocked $sig
-			set ::signals [lreplace $::signals $index $index]
+	proc init {} {
+		signal trap [::ap::signals::getlist] {::ap::signals::loadSignal %S}
+	}
+	
+	proc loadSignal {signal} {
+		::ap::signals::sourceSignal "$signal.tcl"
+	}
+	
+	proc sourceSignal {signalfile} {
+		set signalfile "autopilot/signal/$signalfile"
+		if {[file exists $signalfile]} {
+			::source $signalfile
+		} else {
+			::ap::debug [namespace current] "signalfile $signalfile does not exist"
 		}
 	}
 	
-	::ap::debug WARNING "unsupported signals: $blocked"
-	return $::signals
+	::ap::signals::init
 }
-
-proc sigsource {filename} {
-	set signalfile "autopilot/signal/$filename"
-	if {[file exists $signalfile]} {
-		source $signalfile
-	} else {
-		puts "file does not exist $signalfile\n"
-	}
-}
-
-proc sig_SIGALRM {} {
-	sigsource SIGALRM.tcl
-}
-
-proc sig_SIGHUP {} {
-	sigsource SIGHUP.tcl
-}
-
-proc sig_SIGPOLL {} {
-	sigsource SIGPOLL.tcl
-}
-
-proc sig_SIGPROF {} {
-	sigsource SIGPROF.tcl
-}
-
-proc sig_SIGTERM {} {
-	sigsource SIGTERM.tcl
-}
-
-proc sig_SIGUSR1 {} {
-	sigsource SIGUSR1.tcl
-}
-
-proc sig_SIGUSR2 {} {
-	sigsource SIGUSR2.tcl
-}
-
-proc sig_SIGCONT {} {
-	sigsource SIGCONT.tcl
-}
-
-proc sig_SIGABRT {} {
-	sigsource SIGABRT.tcl
-}
-
-proc sig_SIGILL {} {
-	sigsource SIGILL.tcl
-}
-
-proc sig_SIGQUIT {} {
-	sigsource SIGQUIT.tcl
-}
-
-signal trap [getsignals] sig_%S
