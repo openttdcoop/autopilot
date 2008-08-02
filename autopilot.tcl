@@ -125,7 +125,7 @@ if {[::ap::config::isEnabled autopilot randomize_password]} {
 	set passwords [split $worddata "\n"]
 	set numpasswords [llength $passwords]
 	::ap::func::every [::ap::config::get autopilot password_frequency] {
-		set ::password [lrandom $::passwords]
+		set ::password [::ap::func::lrandom $::passwords]
 		::ap::game::console "server_pw $::password\r"
 	}
 } else {

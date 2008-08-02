@@ -178,6 +178,11 @@ namespace eval ap {
 
 	namespace eval func {
 		
+		# grab a random list element
+		proc lrandom L {
+			lindex $L [expr {int(rand()*[llength $L])}]
+		}
+		
 		# remove irc codes from string
 		proc strip_color {str} {
 			return [regsub -all {\002|\003[0-9]{1,2},[0-9]{1,2}|\003[0-9]{1,2}|\003|\026|\037|\033\133.*\;} $str {}]
