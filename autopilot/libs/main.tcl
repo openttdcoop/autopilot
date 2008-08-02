@@ -92,7 +92,7 @@ namespace eval ap {
 		}
 		
 		proc console {command} {
-			exp_send -i $::ds $command
+			exp_send -i $::ds -- $command
 		}
 		
 		proc output {message} {
