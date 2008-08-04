@@ -211,10 +211,13 @@ set timeout [::ap::config::get autopilot responsiveness]
 namespace eval mainloop {
 
 	# Array for players
-	array set ::player {}
+	array set player {}
 	
 	# map player names to id's
-	array set ::nick2id {}
+	array set nick2id {}
+	
+	# company array
+	array set company {}
 	
 	# Whether to enable the console for commands
 	set use_console [::ap::config::get autopilot use_console]
@@ -357,17 +360,17 @@ namespace eval mainloop {
 							scan $npline "Client #%d  name: discarded  company: %d  IP: %s" p_number p_company p_IP
 							# Ignore client #1 (the server)
 							if {$p_number > 1} {
-								set pl_number [array size ::player]
-								set ::nick2id($p_name) $p_number
+								set pl_number [array size player]
+								set nick2id($p_name) $p_number
 								if {$p_company > $::max_companies} {
-									set ::player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company(255) 0]} $p_number"
+									set player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company(255) 0]} $p_number"
 								} else {
-									set ::player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company($p_company) 0]} $p_number"
+									set player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company($p_company) 0]} $p_number"
 								}
 							}
 						}   
 						if {[string match doneclientcount $linestr]} {
-							set ::players [array size ::player]
+							set ::players [array size player]
 							# Set the status bar
 							set ::ap_status [format $::lang::players $::players]
 						}

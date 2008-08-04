@@ -213,8 +213,8 @@ namespace eval ::ap {
 		}
 		
 		proc getClientId {nick} {
-			if {[array names ::nick2id -exact $nick] != {}} {
-				return $::nick2id($nick)
+			if {[array names ::mainloop::nick2id -exact $nick] != {}} {
+				return $::mainloop::nick2id($nick)
 			} else {
 				return 0
 			}
