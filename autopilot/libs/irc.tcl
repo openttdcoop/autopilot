@@ -18,7 +18,7 @@
 puts $::lang::load_irc_module
 package require irc
 
-namespace eval mod_irc {
+namespace eval ::mod_irc {
 
 	# connection
 	variable irc [::irc::connection]
@@ -45,20 +45,30 @@ namespace eval mod_irc {
 			$::mod_irc::irc send "NOTICE $nick :$message"
 		}
 
-		# Define a way to talk to IRC
-		proc channel message {
+		# (depricated) chat publicly to channel
+		proc channel {nick {message {}}} {
+			::ap::debug [namespace current]::channel depricated
+			set message [::ap::func::getChatMessage $nick $message]
+			::mod_irc::say::public $message
+		}
+		
+		# public chat
+		proc public {nick {message {}}} {
+			set message [::ap::func::getChatMessage $nick $message]
 			$::mod_irc::irc send "PRIVMSG $::mod_irc::config::channel :$message"
 		}
-
+		
+		# private chat
 		proc private {nick message} {
 			$::mod_irc::irc send "PRIVMSG $nick :$message"
 		}
 		
-		proc reply {inPrivate nick message} {
-			if {$inPrivate} {
+		# reply as has been addressed
+		proc reply {private nick message} {
+			if {$private} {
 				::mod_irc::say::private $nick $message
 			} else {
-				::mod_irc::say::channel $message
+				::mod_irc::say::public $nick $message
 			}
 		}
 	}
@@ -318,9 +328,9 @@ namespace eval mod_irc {
 						variable filename "[lindex $bang_command 0].tcl"
 						
 						if {[file exists "autopilot/scripts/irc/$filename"]} {
-							source "autopilot/scripts/irc/$filename"
+							::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"
 						} elseif {[file exists "autpilot/scripts/global/$filename"]} {
-							source "autopilot/scripts/global/$filename"
+							::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"
 						}
 					}
 				}
@@ -335,7 +345,7 @@ namespace eval mod_irc {
 					}
 				}
 			} else {
-				::ap::say::toGame "<[who]> [msg]"
+				::ap::game::say::public "<[who]> [msg]"
 				if {[namespace exists ::mod_db]} {
 					::mod_db::log "$::mod_irc::config::channel/[who]: [msg]"
 				}

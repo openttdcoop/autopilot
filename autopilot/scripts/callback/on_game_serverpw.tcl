@@ -1,0 +1,1 @@
+::ap::say::everywhere "server password set to \"[getArg 1]\""

@@ -211,7 +211,10 @@ set timeout [::ap::config::get autopilot responsiveness]
 namespace eval mainloop {
 
 	# Array for players
-	array set player {}
+	array set ::player {}
+	
+	# map player names to id's
+	array set ::nick2id {}
 	
 	# Whether to enable the console for commands
 	set use_console [::ap::config::get autopilot use_console]
@@ -238,23 +241,47 @@ namespace eval mainloop {
 						set line [split $linestr]
 						# Get this far, and we have exactly one line of output from the server.
 						# Now we have fun with ifs and cases!
-		 
-						if {[string first {[All] } $linestr] == 0} {
-							# This is public chat
-							# Snap off the name of the sender, look at content
-							set lineafternick [lrange [split [join [lrange [split $linestr :] 1 end] :]] 1 end]
-							# Check for some commands
-							if {![string match [lindex $line 1] $name:]} {
-								::ap::say::fromGame [join [lrange $line 1 end]]
+						if {[string first {[All] } $linestr] == 0 || [string first {[Private] } $linestr] == 0} {
+							set chat [regexp -inline -- {\[(All|Private)\] (.+?): (.*)} $linestr]
+							
+							set nick [lindex $chat 2]
+							set lineafternick [lindex $chat 3]
+							
+							set private 0
+							
+							if {[lindex $chat 1] == "Private"} {
+								set private 1
 							}
-							if {[string equal [lrange $lineafternick 0 end] {show autopilot version}]} {
-								::ap::say::toGame $::version
-							}
-							if {[string equal [lrange $lineafternick 0 end] {!version}]} {
-								::ap::say::toGame $::version
-							}
-							if {[string equal [lrange $lineafternick 0 end] {!page admin}]} {
-								::ap::func::page_admin [string map {: {}} [lindex $line 1]]
+							
+							if {$nick == $::name} {
+								# dont handle what we ourselves say!
+							} elseif {$private && [::ap::func::getClientId $nick] == 0} {
+								# if we say in private To somebody, the cought nick is prefixed with "To " and we get a 0 back as Id
+								# ignore commands the server might say in private
+							} elseif {[string first {!} $lineafternick] == 0} {
+								# this is a bang_command...
+								set bang_command [string range $lineafternick 1 end]
+								switch $bang_command {
+									{version} {
+										ap::game::say::reply $private $nick $::version
+									}
+									{admin} {
+										::ap::func::page_admin [string map {: {}} [lindex $line 1]]
+									}
+									{default} {
+										variable filename "[lindex $bang_command 0].tcl"
+						
+										if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/game/$filename"]} {
+											::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"
+										}
+									}
+								}
+							} elseif {!$private} {
+								if {[string first {/me } $lineafternick] == 0} {
+									::ap::say::fromGame "* $nick [lrange $lineafternick 1 end]"
+								} else {
+									::ap::say::fromGame [join [lrange $line 1 end]]
+								}
 							}
 						} elseif {[string first "Company Name" $linestr] > 1} {
 							# Output from players command, populate companies
@@ -269,13 +296,14 @@ namespace eval mainloop {
 							# Somebody joined, left or was renamed
 							if {[string first "has joined the game" $linestr] > 0} {
 								# Joined the game.  Greet, announce and increment count.
-								::ap::say::toGame [string map "NAME {[lrange $line 1 end-4]}" [::ap::func::map_strings [::ap::config::get autopilot motd1]]]
-								::ap::say::toGame [string map "NAME {[lrange $line 1 end-4]}" [::ap::func::map_strings [::ap::config::get autopilot motd2]]]
-								::ap::say::toGame [string map "NAME {[lrange $line 1 end-4]}" [::ap::func::map_strings [::ap::config::get autopilot motd3]]]
-								::ap::say::fromGame [join [lrange $line 1 end]]
+								set nick [lrange [split $linestr] 1 end-4]
+								
 								# We used to increment and decrement, but this also
 								# populates the player array.
 								::ap::count::players
+								
+								after $::standard_delay [string map "NICK {$nick}" {::ap::callback::execute {NICK} ::ap::game::say 1 [list {[callback] on_game_join}] {autopilot/scripts/callback/on_game_join.tcl}}]
+								
 								# Unpause if there are enough players.
 								if {[::ap::config::isEnabled autopilot save_on_join]} {
 									::ap::game::save "join_[format %x [clock seconds]]"
@@ -298,7 +326,7 @@ namespace eval mainloop {
 							}
 							if {[string first "has changed his/her name to" $linestr] >0} {
 								# Player changed name.  Announce the fact.
-								::ap::say::fromGame [lrange $line 1 end]
+								::ap::say::fromGame "*** [lrange $line 1 end]"
 								::ap::count::players
 							}
 						}
@@ -315,6 +343,8 @@ namespace eval mainloop {
 							if {[namespace exists ::mod_db]} {
 							   ::mod_db::set_password $::password
 							}
+							
+							::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverwp} $::password] {autopilot/scripts/callback/on_game_serverpw.tcl}
 						}
 						if {[regexp "^Client.*unique-id: '\[0-9,a-f\]*'\$" $linestr]} {
 							# We're discarding output from status
@@ -327,16 +357,17 @@ namespace eval mainloop {
 							scan $npline "Client #%d  name: discarded  company: %d  IP: %s" p_number p_company p_IP
 							# Ignore client #1 (the server)
 							if {$p_number > 1} {
-								set pl_number [array size player]
+								set pl_number [array size ::player]
+								set ::nick2id($p_name) $p_number
 								if {$p_company > $::max_companies} {
-									set player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company(255) 0]} $p_number"
+									set ::player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company(255) 0]} $p_number"
 								} else {
-									set player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company($p_company) 0]} $p_number"
+									set ::player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company($p_company) 0]} $p_number"
 								}
 							}
 						}   
 						if {[string match doneclientcount $linestr]} {
-							set ::players [array size player]
+							set ::players [array size ::player]
 							# Set the status bar
 							set ::ap_status [format $::lang::players $::players]
 						}

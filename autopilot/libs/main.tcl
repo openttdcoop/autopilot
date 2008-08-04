@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-namespace eval ap {
+namespace eval ::ap {
 	
 	namespace eval config {
 		
@@ -98,7 +98,28 @@ namespace eval ap {
 		proc output {message} {
 			puts $message
 			if {[namespace exists ::mod_irc]} {
-				::mod_irc::say::channel $message
+				::mod_irc::say::public $message
+			}
+		}
+		
+		namespace eval say {
+			
+			proc public {nick {message {}}} {
+				set message [::ap::func::getChatMessage $nick $message]
+				::ap::game::console "say \"$message\"\r"
+			}
+			
+			proc private {nick message} {
+				variable client_id [::ap::func::getClientId $nick]
+				::ap::game::console "say_client $client_id \"$message\"\r"
+			}
+			
+			proc reply {private nick message} {
+				if {$private} {
+					::ap::game::say::private $nick $message
+				} else {
+					::ap::game::say::public $nick $message
+				}
 			}
 		}
 	}
@@ -142,10 +163,10 @@ namespace eval ap {
 	namespace eval say {
 		
 		proc everywhere {message} {
-			::ap::say::toGame $message
+			::ap::game::say::public $message
 			
 			if {[namespace exists ::mod_irc]} {
-				::mod_irc::say::channel $message
+				::mod_irc::say::public $message
 			}
 			
 			if {[namespace exists ::mod_db]} {
@@ -153,21 +174,20 @@ namespace eval ap {
 			}
 		}
 		
+		# depricated
 		proc toGame {message} {
-			::ap::game::console "say \"$message\"\r"
+			::ap::debug [namespace current]::toGame depricated
+			::ap::game::say::public "$message"
 		}
 		
 		proc toClient {client message} {
-			if {![string is integer $message]} {
-				variable client [::ap::getClientId $client]
-			}
-			
-			::ap::game::console "say_client $client \"$message\"\r"
+			::ap::debug [namespace current]::toClient depricated
+			::ap::game::say::private $client $message
 		}
 		
 		proc fromGame {message} {
 			if {[namespace exists ::mod_irc]} {
-				::mod_irc::say::channel $message
+				::mod_irc::say::public $message
 			}
 			
 			if {[namespace exists ::mod_db]} {
@@ -177,6 +197,28 @@ namespace eval ap {
 	}
 
 	namespace eval func {
+		
+		proc getChatMessage {nick message} {
+			if {$message == {}} {
+				return $nick
+			} elseif {$nick == {}} {
+				return $message
+			} else {
+				if {[::ap::config::isEnabled autopilot respond_with_nick]} {
+					return "$nick: $message"
+				} else {
+					return $message
+				}
+			}
+		}
+		
+		proc getClientId {nick} {
+			if {[array names ::nick2id -exact $nick] != {}} {
+				return $::nick2id($nick)
+			} else {
+				return 0
+			}
+		}
 		
 		# grab a random list element
 		proc lrandom L {
@@ -242,6 +284,78 @@ namespace eval ap {
 				say_game $::lang::admin_paged
 			}
 			say_from_game "Admin paged on this server by $name"
+		}
+	}
+	
+	namespace eval callback {
+		variable who {}
+		variable target {}
+		variable private false
+		variable args {}
+		
+		proc execute {cbWho cbTarget cbPrivate cbArgs cbFile} {
+			set ::ap::callback::who $cbWho
+			set ::ap::callback::target $cbTarget
+			set ::ap::callback::private $cbPrivate
+			set ::ap::callback::args $cbArgs
+			
+			if {[file exists $cbFile]} {
+				source $cbFile
+				return 1
+			} else {
+				::ap::debug [namespace current] "file $cbFile does not exist"
+				return 0
+			}
+		}
+		
+		proc getArgs {} {
+			return [lrange $::ap::callback::args 1 end]
+		}
+		
+		proc getArg index {
+			if {[numArgs] > $index} {
+				return [lindex $::ap::callback::args $index]
+			} else {
+				return {}
+			}
+		}
+		
+		proc numArgs {} {
+			return [llength $::ap::callback::args]
+		}
+		
+		proc command {} {
+			return [getArg 0]
+		}
+		
+		proc who {} {
+			return $::ap::callback::who
+		}
+		
+		proc private {} {
+			return $::ap::callback::private
+		}
+		
+		proc target {{append {}}} {
+			if {$append == {}} {
+				return $::ap::callback::target
+			} else {
+				return [join [list $::ap::callback::target $append] {::}]
+			}
+		}
+		
+		namespace eval say {
+			proc public {message} {
+				[::ap::callback::target public] [::ap::callback::who] $message
+			}
+			
+			proc private {message} {
+				[::ap::callback::target private] [::ap::callback::who] $message
+			}
+			
+			proc reply {message} {
+				[::ap::callback::target reply] [::ap::callback::private] [::ap::callback::who] $message
+			}
 		}
 	}
 }

@@ -1,0 +1,5 @@
+say::private "Available Commands:"
+say::private "!help     -- this help"
+say::private "!version  -- version of the server bot"
+say::private "!admin    -- request an admin to join the game"
+say::private "---"
