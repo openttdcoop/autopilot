@@ -89,7 +89,7 @@ if { [ string equal "$arg1" "load" ] } {
 } else {
 	set commandline "$openttd -c $inifilename -D"
 	::ap::game::output [format $::lang::startnew [::ap::config::get network server_name]]
-	::ap::game::output [format $::lang::landscape_is [::ap::config::get gameopt landscape]]
+	::ap::game::output [format $::lang::landscape_is [::ap::config::get game_creation landscape]]
 	if {[::ap::config::get game_creation map_y] != {}} {
 		::ap::game::output [format $::lang::map_dimensions [expr (pow(2,[::ap::config::get game_creation map_y]))] [expr (pow(2,[::ap::config::get game_creation map_x]))]]
 	} else {
