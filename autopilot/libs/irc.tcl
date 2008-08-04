@@ -149,10 +149,10 @@ namespace eval ::mod_irc {
 			# Wait a second to allow the Expect to pick up the result from players
 			after $::standard_delay [string map "NICK $nick
 						PRIVATE $private" {
-				for {set i 1} {$i <= $::max_companies} {incr i} {
+				foreach {number} [lsort [array get ::mainloop::company]] {
 					# we only want the company if founding date > 1
-					if {[lindex $::mainloop::company($i) 3] > 1} {
-						::mod_irc::say::reply PRIVATE NICK [format {Company %d (%s): %s} $i [lindex $::mainloop::company($i) 0] [lindex $::mainloop::company($i) 1]]
+					if {[lindex $::mainloop::company($number) 3] > 1} {
+						::mod_irc::say::reply PRIVATE NICK [format {Company %d (%s): %s} $number [lindex $::mainloop::company($number) 0] [lindex $::mainloop::company($number) 1]]
 					}
 				}
 			}]
@@ -183,7 +183,7 @@ namespace eval ::mod_irc {
 			::ap::count::players
 			after $::standard_delay [string map $strmap {
 				# Wait a second to allow the Expect to pick up the result from clients
-				foreach {number} [array names ::mainloop::player] {
+				foreach {number} [lsort [array names ::mainloop::player]] {
 					if {[lindex $::mainloop::player($number) 1] > $max_companies} {
 						::mod_irc::say::reply PRIVATE NICK [format {Player %d is %s, a spectator} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
 					} else {
