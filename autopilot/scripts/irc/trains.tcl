@@ -4,6 +4,6 @@ if {![::mod_irc::nickIsOp [who]]} {
 	say::reply "[command] <integer>: set value of max_trains"
 } else {
 	# we are ops and have one argument that is an integer
-	::ap::game::console "patch max_trains $numtrains\r"
-	::ap::say::everywhere "*** [who] has set max_trains to $numtrains"
+	::ap::game::console "patch max_trains [getArg 1]\r"
+	::ap::say::everywhere "*** [who] has set max_trains to [getArg 1]"
 }
