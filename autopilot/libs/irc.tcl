@@ -27,14 +27,15 @@ namespace eval ::mod_irc {
 
 	# config
 	namespace eval config {
-		set server [::ap::config::get autopilot irc_server]
-		set port [::ap::config::get autopilot irc_port]
-		set user [::ap::config::get autopilot irc_user]
-		set nick [::ap::config::get network player_name]
-		set channel [::ap::config::get autopilot irc_channel]
-		set commandchar [::ap::config::get autopilot irc_commandchar]
-		if [::ap::config::isEnabled autopilot irc_bridge] { set bridge 1 } {set bridge 0}
-		if [::ap::config::isEnabled autopilot irc_explicit_say] { set explicit_say 1 } {set explicit_say 0 }
+		variable server [::ap::config::get autopilot irc_server]
+		variable port [::ap::config::get autopilot irc_port]
+		variable user [::ap::config::get autopilot irc_user]
+		variable nick [::ap::config::get network player_name]
+		variable channel [::ap::config::get autopilot irc_channel]
+		variable channelkey [::ap::config::get autopilot irc_channel_key]
+		variable commandchar [::ap::config::get autopilot irc_commandchar]
+		variable bridge [::ap::config::isEnabled autopilot irc_bridge]
+		variable explicit_say [::ap::config::isEnabled autopilot irc_explicit_say]
 	}
 
 	# means of communicating with people on irc
@@ -111,7 +112,7 @@ namespace eval ::mod_irc {
 					$::mod_irc::irc send $nickservtask
 				}
 				
-				::mod_irc::network::join $::mod_irc::config::channel
+				::mod_irc::network::join $::mod_irc::config::channel $::mod_irc::config::channelkey
 			}
 		}
 
@@ -123,8 +124,8 @@ namespace eval ::mod_irc {
 		}
 
 		# how to join a channel
-		proc join {channel} {
-			$::mod_irc::irc join $channel
+		proc join {channel {key {}}} {
+			$::mod_irc::irc join $channel $key
 			::mod_irc::network::names $channel
 		}
 
@@ -243,7 +244,7 @@ namespace eval ::mod_irc {
 	
 	# we join OUR channel on ANY invite!
 	$irc registerevent INVITE {
-		::mod_irc::network::join $::mod_irc::config::channel
+		::mod_irc::network::join $::mod_irc::config::channel $::mod_irc::config::channelkey
 	}
 	
 	# catch PRIVMSG (this can be private to ap or to the channel...)
