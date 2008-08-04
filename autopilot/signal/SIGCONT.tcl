@@ -1,3 +1,3 @@
-if {[::ap::config::isEnabled autopilot use_irc]} {
+if {[namespace exists ::mod_irc]} {
 	::mod_irc::network::connect
 }

@@ -145,7 +145,7 @@ namespace eval ::mod_irc {
 		# construct the company list and send according to command received
 		proc company_list {target nick} {
 			set private [::mod_irc::chatIsPrivate $target]
-			company_count
+			::ap::count::companies
 			# Wait a second to allow the Expect to pick up the result from players
 			after $::standard_delay [string map "NICK $nick
 						PRIVATE $private" {
