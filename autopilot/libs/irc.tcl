@@ -22,7 +22,8 @@ namespace eval ::mod_irc {
 	# connection
 	variable irc [::irc::connection]
 	
-	variable ops [list]
+	variable ops {}
+	variable nicklist {}
 
 	# config
 	namespace eval config {
@@ -130,7 +131,6 @@ namespace eval ::mod_irc {
 		# how to join a channel
 		proc join {channel {key {}}} {
 			$::mod_irc::irc join $channel $key
-			::mod_irc::network::names $channel
 		}
 
 		# how to leave a channel
@@ -140,6 +140,13 @@ namespace eval ::mod_irc {
 
 		# send a request for all names in the channel (lists op status)
 		proc names {channel} {
+			set ::mod_irc::nicklist {}
+			
+			#refuse to send a global NAMES
+			if {$channel == {}} {
+				set channel $::mod_irc::config::channel
+			}
+			
 			$::mod_irc::irc send "NAMES $channel"
 		}
 	}
@@ -200,9 +207,9 @@ namespace eval ::mod_irc {
 
 	proc nickIsOp {nick} {
 		if {[lsearch -exact $::mod_irc::ops $nick] > -1} {
-			return true
+			return 1
 		} else {
-			return false
+			return 0
 		}
 	}
 	
@@ -220,14 +227,30 @@ namespace eval ::mod_irc {
 	
 	# register some callback events
 	
+	# send NAMES after joining a channel
+	$::mod_irc::irc registerevent 332 {
+		::mod_irc::network::names [target]
+	}
+	
 	# response from NAMES command
 	$::mod_irc::irc registerevent 353 {
-		set ::mod_irc::ops [list]
-		foreach name [split [msg] { }] {
-			#filter channel operators out of the list
-			if {[string first {@} $name] == 0} {
-				lappend ::mod_irc::ops [string range $name 1 end]
+		append ::mod_irc::nicklist [split [msg]]
+	}
+	
+	# end of NAMES command, start processing the list
+	$::mod_irc::irc registerevent 366 {
+		if {[additional] != $::mod_irc::config::nick} {
+			# clear the ops list
+			set ::mod_irc::ops {}
+			# find ops (prefixed with @)
+			foreach {name} [lsort -unique [split $::mod_irc::nicklist]] {
+				if {[string first {@} $name] == 0} {
+					lappend ::mod_irc::ops [string range $name 1 end]
+				}
 			}
+			
+			# clear the nicklist again!
+			set ::mod_irc::nicklist {}
 		}
 	}
 	
@@ -264,7 +287,7 @@ namespace eval ::mod_irc {
 			
 			# get the bang command
 			set bang_command [split [msg]]
-			if {[string first {!} $bang_command] == 0} {
+			if {[string first $::mod_irc::config::commandchar $bang_command] == 0} {
 				set bang_command [string range $bang_command 1 end]
 			}
 			
