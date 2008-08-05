@@ -382,6 +382,10 @@ namespace eval mainloop {
 			}
 			eof {
 				::ap::game::output $::lang::server_exited
+				if {[namespace exists ::mod_db]} {
+					::mod_db::network::quit $::lang::admin_quit
+				}
+				exec echo {} > $pidfile
 				break;
 			}
 		}
@@ -391,7 +395,6 @@ namespace eval mainloop {
 				"quit\n" {
 					::ap::say::everywhere $::lang::admin_quit
 					::ap::game::quit
-					break
 				}
 				"exit\n" {
 					::ap::say::everywhere $::lang::admin_quit
@@ -400,7 +403,7 @@ namespace eval mainloop {
 					::ap::game::quit
 				}
 				"save\n" {
-					say_everywhere $::lang::saving_game
+					::ap::say::everywhere $::lang::saving_game
 					::ap::game::save
 				}
 				"version\n" {
@@ -418,8 +421,3 @@ namespace eval mainloop {
 
 	# End of ::mainloop namespace
 }
-
-if {[namespace exists ::mod_db]} {
-	::mod_db::disconnect
-}
-exec echo {} > $pidfile
