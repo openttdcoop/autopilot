@@ -15,8 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-puts $::lang::load_irc_module
-package require irc
+puts "$::lang::load_irc_module (version: [package require irc])"
 
 namespace eval ::mod_irc {
 
@@ -96,6 +95,10 @@ namespace eval ::mod_irc {
 
 		# how to connect to a server
 		proc connect {} {
+			if {$::mod_irc::irc == {}} {
+				set ::mod_irc::irc [::irc::connection]
+			}
+			
 			set code [catch {$::mod_irc::irc connect $::mod_irc::config::server $::mod_irc::config::port}]
 			if {$code} {
 				# connection failed
@@ -120,6 +123,7 @@ namespace eval ::mod_irc {
 		proc quit {message} {
 			if {[$::mod_irc::irc connected]} {
 				$::mod_irc::irc quit $message
+				$::mod_irc::irc destroy
 			}
 		}
 
@@ -130,8 +134,8 @@ namespace eval ::mod_irc {
 		}
 
 		# how to leave a channel
-		proc part {channel} {
-			$::mod_irc::irc part $channel
+		proc part {channel {message {}}} {
+			$::mod_irc::irc part $channel $message
 		}
 
 		# send a request for all names in the channel (lists op status)
@@ -306,9 +310,9 @@ namespace eval ::mod_irc {
 					{leave} {
 						if {[::mod_irc::nickIsOp [who]]} {
 							if {[::mod_irc::chatIsPrivate [target]]} {
-								::mod_irc::network::part [lrange $bang_command 1 end]
+								::mod_irc::network::part [lindex $bang_command 1] [lrange $bang_command 2 end]
 							} else {
-								::mod_irc::network::part [target]
+								::mod_irc::network::part [target] [lrange $bang_command 1 end]
 							}
 						}
 					}
