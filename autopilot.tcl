@@ -127,6 +127,7 @@ if {[::ap::config::isEnabled autopilot randomize_password]} {
 	::ap::func::every [::ap::config::get autopilot password_frequency] {
 		set ::password [::ap::func::lrandom $::passwords]
 		::ap::game::console "server_pw $::password\r"
+		::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverpw} $::password] {autopilot/scripts/callback/on_game_serverpw.tcl}
 	}
 } else {
 	set ::password [::ap::config::get network server_password]
@@ -317,7 +318,7 @@ namespace eval mainloop {
 							}
 							if {[string first "has left the game" $linestr] > 0} {
 								# Left the game.  Announce and decrement count.
-								::ap::say::fromGame [join [lrange $line 1 end]]
+								::ap::say::fromGame "*** [join [lrange $line 1 end]]"
 								# We used to increment and decrement, but this also
 								# populates the player array.
 								::ap::count::players
@@ -346,8 +347,6 @@ namespace eval mainloop {
 							if {[namespace exists ::mod_db]} {
 							   ::mod_db::set_password $::password
 							}
-							
-							::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverwp} $::password] {autopilot/scripts/callback/on_game_serverpw.tcl}
 						}
 						if {[regexp "^Client.*unique-id: '\[0-9,a-f\]*'\$" $linestr]} {
 							# We're discarding output from status
