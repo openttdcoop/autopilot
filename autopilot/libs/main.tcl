@@ -256,34 +256,6 @@ namespace eval ::ap {
 		
 		# Page the admin by email
 		proc page_admin name {
-			set smtp_server [get_setting autopilot smtp_server]
-			if {$smtp_server != {} } {
-				set mailserver [socket $smtp_server 25]
-				puts $mailserver "HELO [info hostname]"
-				flush $mailserver
-				# Necessary to read the response on servers where
-				# pipelining is forbidden as an anti-spam measure
-				gets $mailserver response
-				puts $mailserver "MAIL FROM: [get_setting autopilot email]"
-				flush $mailserver
-				gets $mailserver response
-				puts $mailserver "RCPT TO: [get_setting autopilot email]"
-				flush $mailserver
-				gets $mailserver response
-				puts $mailserver DATA
-				flush $mailserver
-				gets $mailserver response
-				puts $mailserver "SUBJECT: [format $::lang::admin_page $name [get_setting network server_name]]"
-				puts $mailserver $::lang::admin_page_body
-				puts $mailserver .
-				flush $mailserver
-				gets $mailserver response
-				puts $mailserver QUIT
-				flush $mailserver
-				close $mailserver
-				say_game $::lang::admin_paged
-			}
-			say_from_game "Admin paged on this server by $name"
 		}
 	}
 	
