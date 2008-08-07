@@ -160,7 +160,7 @@ namespace eval ::mod_irc {
 			# Wait a second to allow the Expect to pick up the result from players
 			after $::standard_delay [string map "NICK $nick
 						PRIVATE $private" {
-				foreach {number} [lsort [array get ::mainloop::company]] {
+				for {variable number 1} {$number < [array size ::mainloop::company]} {incr number} {
 					# we only want the company if founding date > 1
 					if {[lindex $::mainloop::company($number) 3] > 1} {
 						::mod_irc::say::reply PRIVATE NICK [format {Company %d (%s): %s} $number [lindex $::mainloop::company($number) 0] [lindex $::mainloop::company($number) 1]]

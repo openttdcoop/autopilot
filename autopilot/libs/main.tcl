@@ -130,7 +130,7 @@ namespace eval ::ap {
 		# a players command, then letting the Expect loop pick up the
 		# result
 		proc companies {} {
-			for {set i 1} {$i <= $::max_companies} {incr i} {
+			for {set i 1} {$i < [array size ::mainloop::company]} {incr i} {
 				set ::mainloop::company($i) {none {} 0 0 0 0 0 0 0 0}
 			}
 			set ::mainloop::company(255) {none {Spectator} 0 0 0 0 0 0 0 0}
