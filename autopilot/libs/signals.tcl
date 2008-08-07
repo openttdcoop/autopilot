@@ -59,7 +59,9 @@ namespace eval ::ap::signals {
 	proc sourceSignal {signalfile} {
 		set signalfile "autopilot/signal/$signalfile"
 		if {[file exists $signalfile]} {
-			::source $signalfile
+			if {[catch {source $signalfile} error_msg]} {
+				::ap::debug [namespace current] "$signalfile failed with $error_msg"
+			}
 		} else {
 			::ap::debug [namespace current] "signalfile $signalfile does not exist"
 		}
