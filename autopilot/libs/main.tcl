@@ -300,7 +300,10 @@ namespace eval ::ap {
 			set ::ap::callback::args $cbArgs
 			
 			if {[file exists $cbFile]} {
-				source $cbFile
+				# if we catch something other than 0, we have a faild callback!
+				if {[catch {source $cbFile} error_msg]} {
+					::ap::debug [namespace current] "$cbFile failed with $error_msg"
+				}
 				return 1
 			} else {
 				::ap::debug [namespace current] "file $cbFile does not exist"
