@@ -269,6 +269,9 @@ namespace eval mainloop {
 									{version} {
 										ap::game::say::reply $private $nick $::version
 									}
+									{admin} {
+										::ap::func::page_admin [string map {: {}} [lindex $line 1]]
+									}
 									{default} {
 										variable filename "[lindex $bang_command 0].tcl"
 						

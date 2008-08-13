@@ -27,6 +27,8 @@ namespace eval ::mod_irc {
 
 	# config
 	namespace eval config {
+		::irc::config verbose 1
+		::irc::config debug 1
 		variable server [::ap::config::get autopilot irc_server]
 		variable port [::ap::config::get autopilot irc_port]
 		variable user [::ap::config::get autopilot irc_user]
@@ -227,8 +229,27 @@ namespace eval ::mod_irc {
 	
 	# register some callback events
 	
+	$::mod_irc::irc registerevent PING {
+		puts "--- PING ---"
+		puts [who]
+		puts [target]
+		puts [additional]
+		puts [msg]
+	}
+	
+	# callback on leaving a channel
+	$::mod_irc::irc registerevent PART {
+		::ap::debug [namespace current] "left channel"
+		puts [who]
+		puts [target]
+		puts [msg]
+		puts [additional]
+	}
+	
 	# send NAMES after joining a channel
-	$::mod_irc::irc registerevent 332 {
+	$::mod_irc::irc registerevent JOIN {
+		::ap::debug [namespace current] "joined channel [additional]"
+		::ap::callback::execute {} ::mod_irc::say 0 [list on_irc_join [target] [additional] [msg]] "autopilot/scripts/callback/on_irc_join.tcl"
 		::mod_irc::network::names [target]
 	}
 	
@@ -266,7 +287,7 @@ namespace eval ::mod_irc {
 	
 	# catch kick
 	$::mod_irc::irc registerevent KICK {
-		after $::standard_delay [string map "CHANNEL [target]" "::mod_irc::network::join CHANNEL"]
+		::ap::callback::execute [who] ::mod_irc::say 0 [list on_irc_kick [target] [msg]] "autopilot/scripts/callback/on_irc_kick.tcl"
 	}
 	
 	# we join OUR channel on ANY invite!
@@ -355,9 +376,7 @@ namespace eval ::mod_irc {
 					{default} {
 						variable filename "[lindex $bang_command 0].tcl"
 						
-						if {[file exists "autopilot/scripts/irc/$filename"]} {
-							::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"
-						} elseif {[file exists "autpilot/scripts/global/$filename"]} {
+						if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"]} {
 							::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"
 						}
 					}
@@ -381,5 +400,7 @@ namespace eval ::mod_irc {
 		}
 	}
 	
-	::mod_irc::network::connect	
+	::mod_irc::network::connect
+	
+	puts [$::mod_irc::irc getevent PING]
 }

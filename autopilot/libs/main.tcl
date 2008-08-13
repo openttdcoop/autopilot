@@ -106,12 +106,12 @@ namespace eval ::ap {
 			
 			proc public {nick {message {}}} {
 				set message [::ap::func::getChatMessage $nick $message]
-				::ap::game::console "say \"$message\"\r"
+				::ap::game::console "say \"[::ap::func::sanitizeChat $message]\"\r"
 			}
 			
 			proc private {nick message} {
 				variable client_id [::ap::func::getClientId $nick]
-				::ap::game::console "say_client $client_id \"$message\"\r"
+				::ap::game::console "say_client $client_id \"[::ap::func::sanitizeChat $message]\"\r"
 			}
 			
 			proc reply {private nick message} {
@@ -226,13 +226,17 @@ namespace eval ::ap {
 		}
 		
 		# remove irc codes from string
-		proc strip_color {str} {
-			return [regsub -all {\002|\003[0-9]{1,2},[0-9]{1,2}|\003[0-9]{1,2}|\003|\026|\037|\033\133.*\;} $str {}]
+		proc stripIrcColor {message} {
+			return [regsub -all {\002|\003[0-9]{1,2},[0-9]{1,2}|\003[0-9]{1,2}|\003|\026|\037|\033\133.*\;} $message {}]
 		}
 		
 		# Sanitize messages to the game server
-		proc ds_sanitize message {
-			return [string map {\" '} [::ap::func::strip_color $message]]
+		proc escape {message} {
+			return [string map [list \" {\"}] $message]
+		}
+		
+		proc sanitizeChat {message} {
+			return [::ap::func::escape [::ap::func::stripIrcColor $message]]
 		}
 		
 		proc map_strings {str} {
