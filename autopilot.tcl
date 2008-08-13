@@ -281,7 +281,7 @@ namespace eval mainloop {
 								if {[string first {/me } $lineafternick] == 0} {
 									::ap::say::fromGame "* $nick [lrange $lineafternick 1 end]"
 								} else {
-									::ap::say::fromGame [join [lrange $line 1 end]]
+									::ap::say::fromGame "<$nick> $lineafternick"
 								}
 							}
 						} elseif {[string first "Company Name" $linestr] > 1} {
