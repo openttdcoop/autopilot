@@ -214,7 +214,7 @@ namespace eval ::mod_irc {
 	}
 	
 	proc chatIsPrivate {target} {
-		return [string equal $target $::mod_irc::config::nick]
+		return [string equal -nocase $target $::mod_irc::config::nick]
 	}
 	
 	proc isCTCP {message} {
