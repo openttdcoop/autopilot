@@ -270,12 +270,13 @@ namespace eval ::ap {
 		variable args {}
 		
 		proc execute {cbWho cbTarget cbPrivate cbArgs cbFile} {
-			set ::ap::callback::who $cbWho
-			set ::ap::callback::target $cbTarget
-			set ::ap::callback::private $cbPrivate
-			set ::ap::callback::args $cbArgs
 			
 			if {[file exists $cbFile]} {
+				set ::ap::callback::who $cbWho
+				set ::ap::callback::target $cbTarget
+				set ::ap::callback::private $cbPrivate
+				set ::ap::callback::args $cbArgs
+				
 				# if we catch something other than 0, we have a faild callback!
 				if {[catch {source $cbFile} error_msg]} {
 					::ap::debug [namespace current] "$cbFile failed with $error_msg"
