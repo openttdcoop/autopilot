@@ -36,6 +36,7 @@ namespace eval ::mod_irc {
 		variable commandchar [::ap::config::get autopilot irc_commandchar]
 		variable bridge [::ap::config::isEnabled autopilot irc_bridge]
 		variable explicit_say [::ap::config::isEnabled autopilot irc_explicit_say]
+		variable eol_style [::ap::config::get autopilot irc_eol_style clrf]
 	}
 
 	# means of communicating with people on irc
@@ -43,7 +44,7 @@ namespace eval ::mod_irc {
 
 		# Procedure to send IRC notices
 		proc notice {nick message} {
-			$::mod_irc::irc send "NOTICE $nick :$message"
+			::mod_irc::network::send "NOTICE $nick :$message"
 		}
 
 		# (depricated) chat publicly to channel
@@ -56,12 +57,12 @@ namespace eval ::mod_irc {
 		# public chat
 		proc public {nick {message {}}} {
 			set message [::ap::func::getChatMessage $nick $message]
-			$::mod_irc::irc send "PRIVMSG $::mod_irc::config::channel :$message"
+			::mod_irc::network::send "PRIVMSG $::mod_irc::config::channel :$message"
 		}
 		
 		# private chat
 		proc private {nick message} {
-			$::mod_irc::irc send "PRIVMSG $nick :$message"
+			::mod_irc::network::send "PRIVMSG $nick :$message"
 		}
 		
 		# reply as has been addressed
@@ -92,7 +93,29 @@ namespace eval ::mod_irc {
 		}
 	}
 
+	namespace eval buffer {
+		
+		variable buf {}
+		
+		proc add {line} {
+			lappend ::mod_irc::buffer::buf $line
+		}
+		
+		proc flush {} {
+			for {variable index 0} {$index < [llength $::mod_irc::buffer::buf]} {incr index} {
+				::mod_irc::network::send [lindex $::mod_irc::buffer::buf $index]
+				lreplace $::mod_irc::buffer::buf $index $index
+			}
+		}
+	}
+
 	namespace eval network {
+
+		# what status do we currently have for the connection
+		# -1 none (do nothing)
+		#  0 connecting (buffer)
+		#  1 fully connected (send directly)
+		variable status -1
 
 		# how to connect to a server
 		proc connect {} {
@@ -103,20 +126,17 @@ namespace eval ::mod_irc {
 			set code [catch {$::mod_irc::irc connect $::mod_irc::config::server $::mod_irc::config::port}]
 			if {$code} {
 				# connection failed
+				set ::mod_irc::network::status -1
 				::ap::debug [namespace current] "$code: $::lang::irc_connect_fail"
 				after 5000 ::mod_irc::network::connect
 			} else {
+				# should default to crlf - but some irc networks dont send that!
+				fconfigure [$::mod_irc::irc socket] -translation $::mod_irc::config::eol_style
+				
+				set ::mod_irc::network::status 0
 				::ap::debug [namespace current] $::lang::irc_connected
 				$::mod_irc::irc user $::mod_irc::config::user localhost domain "$::version"
 				$::mod_irc::irc nick $::mod_irc::config::nick
-				
-				# identify with nickserv if required
-				set nickservtask [::ap::config::get autopilot irc_nickserv]
-				if {$nickservtask != {}} {
-					$::mod_irc::irc send $nickservtask
-				}
-				
-				::mod_irc::network::join $::mod_irc::config::channel $::mod_irc::config::channelkey
 			}
 		}
 
@@ -138,6 +158,18 @@ namespace eval ::mod_irc {
 			$::mod_irc::irc part $channel $message
 		}
 
+		proc send {line} {
+			if {[$::mod_irc::irc connected]} {
+				if {$::mod_irc::network::status == 1} {
+					$::mod_irc::irc send $line
+				} elseif {$::mod_irc::network::status == 0} {
+					::mod_irc::buffer::add $line
+				}
+			} elseif {$::mod_irc::network::status > -1} {
+				::mod_irc::network::connect
+			}
+		}
+
 		# send a request for all names in the channel (lists op status)
 		proc names {channel} {
 			set ::mod_irc::nicklist {}
@@ -147,7 +179,7 @@ namespace eval ::mod_irc {
 				set channel $::mod_irc::config::channel
 			}
 			
-			$::mod_irc::irc send "NAMES $channel"
+			::mod_irc::network::send "NAMES $channel"
 		}
 	}
 
@@ -226,6 +258,19 @@ namespace eval ::mod_irc {
 	}
 	
 	# register some callback events
+	
+	# only join our channel once we have the motd ;-)
+	$::mod_irc::irc registerevent 376 {
+		# identify with nickserv if required
+		set nickservtask [::ap::config::get autopilot irc_nickserv]
+		if {$nickservtask != {}} {
+			$::mod_irc::irc send $nickservtask
+		}
+		
+		::mod_irc::network::join $::mod_irc::config::channel $::mod_irc::config::channelkey
+		set ::mod_irc::network::status 1
+		::mod_irc::buffer::flush
+	}
 	
 	# send NAMES after joining a channel
 	$::mod_irc::irc registerevent 332 {

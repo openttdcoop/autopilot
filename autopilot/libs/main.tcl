@@ -34,11 +34,11 @@ namespace eval ::ap {
 			close $inifile
 		}
 		
-		proc get {section var} {
+		proc get {section var {default {}}} {
 			if {[info exists ::ap::config::$section]} {
 				return [string trim [lrange [lsearch -inline [set ::ap::config::$section] $var*] 1 end]]
 			} else {
-				return {}
+				return $default
 			}
 		}
 		
@@ -305,7 +305,11 @@ namespace eval ::ap {
 		}
 		
 		proc command {} {
-			return [getArg 0]
+			if {[private]} {
+				return [getArg 0]
+			} else {
+				return "[::ap::config::get autopilot irc_commandchar][getArg 0]"
+			}
 		}
 		
 		proc who {} {
