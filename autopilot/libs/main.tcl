@@ -35,7 +35,7 @@ namespace eval ::ap {
 		}
 		
 		proc get {section var {default {}}} {
-			if {[info exists ::ap::config::$section]} {
+			if {[info exists ::ap::config::$section] && [string length [string trim [lrange [lsearch -inline [set ::ap::config::$section] $var*] 1 end]]] > 0} {
 				return [string trim [lrange [lsearch -inline [set ::ap::config::$section] $var*] 1 end]]
 			} else {
 				return $default
@@ -281,10 +281,9 @@ namespace eval ::ap {
 				if {[catch {source $cbFile} error_msg]} {
 					::ap::debug [namespace current] "$cbFile failed with $error_msg"
 				}
-				return 1
+				return true
 			} else {
-				::ap::debug [namespace current] "file $cbFile does not exist"
-				return 0
+				return false
 			}
 		}
 		

@@ -36,7 +36,9 @@ namespace eval ::mod_irc {
 		variable commandchar [::ap::config::get autopilot irc_commandchar]
 		variable bridge [::ap::config::isEnabled autopilot irc_bridge]
 		variable explicit_say [::ap::config::isEnabled autopilot irc_explicit_say]
-		variable eol_style [::ap::config::get autopilot irc_eol_style clrf]
+		variable eol_style [::ap::config::get autopilot irc_eol_style crlf]
+		::irc::config debug [::ap::config::get autopilot irc_debug 0]
+		::irc::config verbose [::ap::config::get autopilot irc_verbose 0]
 	}
 
 	# means of communicating with people on irc
@@ -123,11 +125,10 @@ namespace eval ::mod_irc {
 				set ::mod_irc::irc [::irc::connection]
 			}
 			
-			set code [catch {$::mod_irc::irc connect $::mod_irc::config::server $::mod_irc::config::port}]
-			if {$code} {
+			if {[catch {$::mod_irc::irc connect $::mod_irc::config::server $::mod_irc::config::port} error_msg]} {
 				# connection failed
 				set ::mod_irc::network::status -1
-				::ap::debug [namespace current] "$code: $::lang::irc_connect_fail"
+				::ap::debug [namespace current] "$error_msg"
 				after 5000 ::mod_irc::network::connect
 			} else {
 				# should default to crlf - but some irc networks dont send that!
@@ -267,9 +268,15 @@ namespace eval ::mod_irc {
 			$::mod_irc::irc send $nickservtask
 		}
 		
+		# join the channel
 		::mod_irc::network::join $::mod_irc::config::channel $::mod_irc::config::channelkey
+		
+		# flush the buffer
 		set ::mod_irc::network::status 1
 		::mod_irc::buffer::flush
+		
+		# run the on_irc_connect callback
+		::ap::callback::execute {} ::mod_irc::say 1 [list {[callback] on_irc_connect} [who] [target]] {autopilot/scripts/callback/on_irc_connect.tcl}
 	}
 	
 	# send NAMES after joining a channel
@@ -309,9 +316,19 @@ namespace eval ::mod_irc {
 		::mod_irc::network::names [target]
 	}
 	
+	# catch users quitting
+	$::mod_irc::irc registerevent QUIT {
+		::mod_irc::network::names [target]
+	}
+	
+	# catch people leaving the channel
+	$::mod_irc::irc registerevent PART {
+		::mod_irc::network::names [target]
+	}
+	
 	# catch kick
 	$::mod_irc::irc registerevent KICK {
-		after $::standard_delay [string map "CHANNEL [target]" "::mod_irc::network::join CHANNEL"]
+		::ap::callback::execute [who] ::mod_irc::say 1 [list {[callback] on_irc_kick} [target] [additional] [msg]] {autopilot/scripts/callback/on_irc_kick.tcl}
 	}
 	
 	# we join OUR channel on ANY invite!
@@ -400,10 +417,10 @@ namespace eval ::mod_irc {
 					{default} {
 						variable filename "[lindex $bang_command 0].tcl"
 						
-						if {[file exists "autopilot/scripts/irc/$filename"]} {
-							::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"
-						} elseif {[file exists "autpilot/scripts/global/$filename"]} {
-							::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"
+						if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"]} {
+							if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
+								::ap::debug [namespace current] "no callback file found for \"[lindex $bang_command 0]\""
+							}
 						}
 					}
 				}

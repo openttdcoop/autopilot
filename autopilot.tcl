@@ -273,7 +273,9 @@ namespace eval mainloop {
 										variable filename "[lindex $bang_command 0].tcl"
 						
 										if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/game/$filename"]} {
-											::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"
+											if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
+												::ap::debug [namespace current] "no callback file found for \"[lindex $bang_command 0]\""
+											}
 										}
 									}
 								}
