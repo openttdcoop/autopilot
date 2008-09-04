@@ -287,16 +287,12 @@ namespace eval ::ap {
 			}
 		}
 		
-		proc getArgs {} {
-			return [lrange $::ap::callback::args 1 end]
+		proc getArgs {{start {1}} {end {end}}} {
+			return [lrange $::ap::callback::args $start $end]
 		}
 		
-		proc getArg index {
-			if {[numArgs] > $index} {
-				return [lindex $::ap::callback::args $index]
-			} else {
-				return {}
-			}
+		proc getArg {index} {
+			return [lindex $::ap::callback::args $index]
 		}
 		
 		proc numArgs {} {
