@@ -383,6 +383,7 @@ namespace eval mainloop {
 				if {[namespace exists ::mod_db]} {
 					::mod_db::network::quit $::lang::admin_quit
 				}
+				update
 				exec echo {} > $pidfile
 				break;
 			}
