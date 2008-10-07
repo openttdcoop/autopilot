@@ -9,13 +9,10 @@
 namespace eval lang {
 
 # Loading IRC module
-set load_irc_module {Loading IRC module}
+set load_irc_module {Loading IRC module (version %s)}
 
 # Loading MySQL module
-set load_mysql_module {Loading MySQL module}
-
-# Loading Tk GUI module
-set load_tk_module {Loading Tk GUI module}
+set load_mysql_module {Loading MySQL module (version %s)}
 
 # Autopilot engaged
 set engaged {Autopilot engaged}
@@ -50,8 +47,8 @@ set newgrf_end {End of newgrf list}
 # Connected to IRC server
 set irc_connected {Connected to IRC server}
 
-# Failed to connect to IRC server
-set irc_connect_fail {Failed to connect to IRC server (retrying)}
+# Joined  IRC channel
+set irc_joined_channel {Joined IRC channel %s}
 
 # Saving game...
 set saving_game {Saving game...}

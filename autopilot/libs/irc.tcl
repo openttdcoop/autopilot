@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-puts "$::lang::load_irc_module (version: [package require irc])"
+puts [format $::lang::load_irc_module [package require irc]]
 
 namespace eval ::mod_irc {
 
@@ -27,6 +27,8 @@ namespace eval ::mod_irc {
 
 	# config
 	namespace eval config {
+		variable bind_ip [::ap::config::get autopilot irc_bind_ip]
+		variable bind_port [::ap::config::get autopilot irc_bind_port]
 		variable server [::ap::config::get autopilot irc_server]
 		variable port [::ap::config::get autopilot irc_port]
 		variable user [::ap::config::get autopilot irc_user]
@@ -125,20 +127,53 @@ namespace eval ::mod_irc {
 				set ::mod_irc::irc [::irc::connection]
 			}
 			
-			if {[catch {$::mod_irc::irc connect $::mod_irc::config::server $::mod_irc::config::port} error_msg]} {
+			if {[catch {::mod_irc::network::cmd-connect $::mod_irc::config::server $::mod_irc::config::port $::mod_irc::config::bind_ip $::mod_irc::config::bind_port} error_msg]} {
 				# connection failed
 				set ::mod_irc::network::status -1
 				::ap::debug [namespace current] "$error_msg"
 				after 5000 ::mod_irc::network::connect
 			} else {
 				# should default to crlf - but some irc networks dont send that!
-				fconfigure [$::mod_irc::irc socket] -translation $::mod_irc::config::eol_style
+				fconfigure [::mod_irc::network::getSocket] -translation $::mod_irc::config::eol_style
 				
 				set ::mod_irc::network::status 0
 				::ap::debug [namespace current] $::lang::irc_connected
 				$::mod_irc::irc user $::mod_irc::config::user localhost domain "$::version"
 				$::mod_irc::irc nick $::mod_irc::config::nick
 			}
+		}
+
+		proc getSocket {} {
+			return [set [format "%s::sock" [string replace $::mod_irc::irc [string first {::network} $::mod_irc::irc] end {}]]]
+		}
+		
+		proc setSocket {sock} {
+			set [format "%s::sock" [string replace $::mod_irc::irc [string first {::network} $::mod_irc::irc] end {}]] $sock
+		}
+		
+		proc cmd-connect {{host localhost} {port 6667} {bind_ip {}} {bind_port {}}} {
+			variable sock [::mod_irc::network::getSocket]
+			variable args {}
+			
+			if {$sock == ""} {
+				
+				if {$bind_ip != {}} {
+					lappend args -myaddr $bind_ip
+				}
+				
+				if {$bind_port != {}} {
+					lappend args -myport $bind_port
+				}
+				
+				set sock [eval [concat socket $args $host $port]]
+				
+				fconfigure $sock -translation crlf -buffering line
+				fileevent $sock readable [format "%s::GetEvent" [string replace $::mod_irc::irc [string first {::network} $::mod_irc::irc] end {}]]
+				
+				::mod_irc::network::setSocket $sock
+			}
+			
+			return 0
 		}
 
 		# how to disconnect (quit)
