@@ -95,6 +95,29 @@ namespace eval ::ap {
 			exp_send -i $::ds -- $command
 		}
 		
+		proc consoleCapture {command} {
+			variable buf {} 
+			append command "echo donecapture\r"
+
+			::ap::game::console $command
+
+			expect {
+				-re ".+?\n" {
+					foreach response [split $expect_out(buffer) "\r\n"] {
+						if {[string first $response $command] == -1 && [string length $response] > 0} {
+							lappend buf $response
+						}
+						exp_continue
+					}
+				}
+				donecapture {
+					# do nothing to finish this expect part
+				}
+			}
+
+			return $buf
+		}
+
 		proc output {message} {
 			puts $message
 			if {[namespace exists ::mod_irc]} {
