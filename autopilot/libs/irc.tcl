@@ -440,7 +440,12 @@ namespace eval ::mod_irc {
 						if {[::ap::config::isEnabled autopilot irc_rcon]} {
 							puts "\[AP\] rcon via irc from [who]"
 							if {[::mod_irc::nickIsOp [who]]} {
-								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
+								variable buf [::ap::game::consoleCapture "[join [lrange $bang_command 1 end]]\r"]
+								foreach line $buf {
+									if {[string length [string trim $line]] > 0} {
+										::mod_irc::say::reply $isPrivate [who] $line
+									}
+								}
 							} elseif {$isPrivate && [lindex $bang_command 1] == [::ap::config::get network rcon_password]} {
 								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
 							} else {
