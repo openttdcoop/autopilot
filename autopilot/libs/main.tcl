@@ -74,6 +74,10 @@ namespace eval ::ap {
 			set ::ds $spawn_id
 		}
 		
+		proc initConsole {} {
+			::ap::game::console "alias ap_cmd \"%+ ; echo donecapture\"\r"
+		}
+		
 		proc quit {} {
 			::ap::game::console "quit\r"
 			set ::ds {}
@@ -96,22 +100,21 @@ namespace eval ::ap {
 		}
 		
 		proc consoleCapture {command} {
-			variable buf {} 
-			append command "echo donecapture\r"
+			variable buf {}
 
-			::ap::game::console $command
+			::ap::game::console "ap_cmd $command"
 
 			expect {
+				"ap_cmd $command" {
+					exp_continue
+				}
 				-re ".+?\n" {
 					foreach response [split $expect_out(buffer) "\r\n"] {
-						if {[string first $response $command] == -1 && [string length $response] > 0} {
+						if {[string first $response {donecapture}] == -1 && [string length $response] > 0} {
 							lappend buf $response
+							exp_continue
 						}
-						exp_continue
 					}
-				}
-				donecapture {
-					# do nothing to finish this expect part
 				}
 			}
 

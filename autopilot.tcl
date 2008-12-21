@@ -143,6 +143,9 @@ set spawn_id $ds
 # Set the status bar
 set ap_status $::lang::initializing
 
+# Initialize the OpenTTD Console with useful aliases for ap
+::ap::game::initConsole
+
 # Send some one-off commands to the server
 if {[::ap::config::get network net_frame_freq] != {}} {
 	::ap::game::console "net_frame_freq [::ap::config::get network net_frame_freq]\r"
@@ -172,7 +175,7 @@ if {[::ap::config::isEnabled gui pause_on_newgame] || [::ap::config::isEnabled p
 }
 
 # Initialize other variables
-set name [::ap::config::get network player_name]
+set name [::ap::config::get network client_name]
 if {[::ap::config::isEnabled autopilot use_console]} {
 	set standard_delay [expr ([::ap::config::get autopilot responsiveness] * 1000 + 500)]
 } else {

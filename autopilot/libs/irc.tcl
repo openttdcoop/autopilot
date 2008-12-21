@@ -32,7 +32,7 @@ namespace eval ::mod_irc {
 		variable server [::ap::config::get autopilot irc_server]
 		variable port [::ap::config::get autopilot irc_port]
 		variable user [::ap::config::get autopilot irc_user]
-		variable nick [::ap::config::get network player_name]
+		variable nick [::ap::config::get network client_name]
 		variable channel [::ap::config::get autopilot irc_channel]
 		variable channelkey [::ap::config::get autopilot irc_channel_key]
 		variable commandchar [::ap::config::get autopilot irc_commandchar]
