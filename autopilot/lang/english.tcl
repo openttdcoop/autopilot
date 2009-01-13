@@ -73,6 +73,9 @@ set admin_paged {An admin has been paged by email - please wait}
 # Version request from %s acknowledged.
 set version_requested {Version request from %s acknowledged}
 
+# Nobody Connected to Server
+set no_players_connected_to_server {There are currently no players connected to the server}
+
 # Tk GUI widgets
 ################
 

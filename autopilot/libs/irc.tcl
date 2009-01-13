@@ -262,12 +262,16 @@ namespace eval ::mod_irc {
 			::ap::count::players
 			after $::standard_delay [string map $strmap {
 				# Wait a second to allow the Expect to pick up the result from clients
-				foreach {number} [lsort [array names ::mainloop::player]] {
-					if {[lindex $::mainloop::player($number) 1] > $max_companies} {
-						::mod_irc::say::reply PRIVATE NICK [format {Player %d is %s, a spectator} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
-					} else {
-						::mod_irc::say::reply PRIVATE NICK [format {Player %d (%s) is %s, in company %d (%s)} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 0] [lindex $::mainloop::player($number) 0] [lindex $::mainloop::player($number) 1] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 1]]
+				if { $::players > 0 } {
+					foreach {number} [lsort [array names ::mainloop::player]] {
+						if {[lindex $::mainloop::player($number) 1] > $max_companies} {
+							::mod_irc::say::reply PRIVATE NICK [format {Player %d is %s, a spectator} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
+						} else {
+							::mod_irc::say::reply PRIVATE NICK [format {Player %d (%s) is %s, in company %d (%s)} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 0] [lindex $::mainloop::player($number) 0] [lindex $::mainloop::player($number) 1] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 1]]
+						}
 					}
+				} else {
+					::mod_irc::say::reply PRIVATE NICK $::lang::no_players_connected_to_server
 				}
 			}]
 		}
