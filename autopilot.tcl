@@ -31,17 +31,17 @@ if [info exists env(OTTD_CONFIG)] {
 	set inifilename $env(OTTD_CONFIG)
 }
 
-# Our version - if you modify and redistribute, please change this
-# string to reflect the fact that this autopilot isn't the original
-# autopilot by Brian Ronald.
-set version {autopilot ap+ 3.0 beta}
-
 namespace eval mainloop {
 	# Do nothing; just make the namespace
 }
 
 # Fetch in our library of functions
 source autopilot/libs/main.tcl
+
+# Our version - if you modify and redistribute, please change this
+# string to reflect the fact that this autopilot isn't the original
+# autopilot by Brian Ronald.
+set version [::ap::func::getApVersion]
 
 # Read in values from openttd.cfg
 # namespace apconfig contains only configuration lists
