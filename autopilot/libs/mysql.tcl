@@ -22,13 +22,13 @@ namespace eval mod_db {
 	variable db {}
 	
 	namespace eval config {
-		variable host   [get_setting autopilot mysql_server]
-		variable user   [get_setting autopilot mysql_user]
-		variable pass   [get_setting autopilot mysql_pass]
-		variable db     [get_setting autopilot mysql_database]
-		variable prefix [get_setting autopilot mysql_prefix]
+		variable host   [::ap::config::get autopilot mysql_server]
+		variable user   [::ap::config::get autopilot mysql_user]
+		variable pass   [::ap::config::get autopilot mysql_pass]
+		variable db     [::ap::config::get autopilot mysql_database]
+		variable prefix [::ap::config::get autopilot mysql_prefix]
 		
-		variable server [get_setting autopilot mysql_gameserver]
+		variable server [::ap::config::get autopilot mysql_gameserver]
 		variable game   {}
 	}
 	
@@ -70,7 +70,7 @@ namespace eval mod_db {
 		variable sql "SELECT value FROM $::mod_db::table::setup WHERE setting='current_game' AND server=$::mod_db::config::server"
 		set ::mod_db::config::game [::mod_db::select $sql]
 		
-		variable sql "REPLACE INTO $::mod_db::table::server SET id=$::mod_db::config::server, name='[::mod_db::escape [get_setting network server_name]]'"
+		variable sql "REPLACE INTO $::mod_db::table::server SET id=$::mod_db::config::server, name='[::mod_db::escape [::ap::config::get network server_name]]'"
 		::mod_db::execute $sql
 	}
 	
@@ -85,7 +85,7 @@ namespace eval mod_db {
 	}
 
 	proc newgame title {
-		variable name [::mod_db::escape "[get_setting network server_name] [clock format [clock seconds] -format %D-%T]"]
+		variable name [::mod_db::escape "[::ap::config::get network server_name] [clock format [clock seconds] -format %D-%T]"]
 		variable sql "INSERT INTO $::mod_db::table::game SET name='$name', server=$::mod_db::config::server"
 		::mod_db::execute $sql
 		
@@ -99,7 +99,7 @@ namespace eval mod_db {
 	::mod_db::init
 	
 	# have a little keep-alive ;-)
-	every 1800000 {
+	::ap::func::every 1800000 {
 		::mysql::ping $::mod_db::db
 	}
 }
