@@ -44,7 +44,7 @@ namespace eval ::ap::signals {
 			}
 		}
 		
-		::ap::debug [namespace current] "WARNING: ignoring signals $ignored"
+		::ap::debug [namespace current] [::msgcat::mc dbg_signal_ignoring $ignored]
 		return $::ap::signals::list
 	}
 	
@@ -60,10 +60,10 @@ namespace eval ::ap::signals {
 		set signalfile "autopilot/signal/$signalfile"
 		if {[file exists $signalfile]} {
 			if {[catch {source $signalfile} error_msg]} {
-				::ap::debug [namespace current] "$signalfile failed with $error_msg"
+				::ap::debug [namespace current] [::msgcat::mc dbg_signal_failed $signalfile $error_msg]
 			}
 		} else {
-			::ap::debug [namespace current] "signalfile $signalfile does not exist"
+			::ap::debug [namespace current] [::msgcat::mc dbg_signal_file_not_found $signalfile]
 		}
 	}
 	

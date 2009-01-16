@@ -168,8 +168,6 @@ namespace eval ::ap {
 		# a clients command, then echoing a string that expect will
 		# treat as a delimiter
 		proc players {} {
-			# Update the status bar
-			set ::ap_status $::lang::recounting
 			array unset ::mainloop::player
 			array set ::mainloop::player {}
 			::ap::count::companies
@@ -278,7 +276,7 @@ namespace eval ::ap {
 			return [string map "
 				COMPANIES {$::companies}
 				EMAIL [::ap::config::get autopilot email]
-				LICENSE {$::lang::license}
+				LICENSE [::msgcat::mc autopilot_license]
 				OTTD {$::ottd_version}
 				PASSWORD {$::password}
 				PLAYERS {$::players}
@@ -314,7 +312,7 @@ namespace eval ::ap {
 				
 				# if we catch something other than 0, we have a faild callback!
 				if {[catch {source $cbFile} error_msg]} {
-					::ap::debug [namespace current] "$cbFile failed with $error_msg"
+					::ap::debug [namespace current] [::msgcat::mc dbg_callback_failed $cbFile $error_msg]
 				}
 				return true
 			} else {

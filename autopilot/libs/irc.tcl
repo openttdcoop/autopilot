@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-puts [format $::lang::load_irc_module [package require irc]]
+puts [::msgcat::mc module_load_irc [package require irc]]
 
 namespace eval ::mod_irc {
 
@@ -130,7 +130,7 @@ namespace eval ::mod_irc {
 				fconfigure [::mod_irc::network::getSocket] -translation $::mod_irc::config::eol_style
 				
 				set ::mod_irc::network::status 0
-				::ap::debug [namespace current] $::lang::irc_connected
+				::ap::debug [namespace current] [::msgcat::mc irc_network_connected]
 				$::mod_irc::irc user $::mod_irc::config::user localhost domain "$::version"
 				$::mod_irc::irc nick $::mod_irc::config::nick
 			}
@@ -221,11 +221,15 @@ namespace eval ::mod_irc {
 			# Wait a second to allow the Expect to pick up the result from players
 			after $::standard_delay [string map "NICK $nick
 						PRIVATE $private" {
-				for {variable number 1} {$number < [array size ::mainloop::company]} {incr number} {
-					# we only want the company if founding date > 1
-					if {[lindex $::mainloop::company($number) 3] > 1} {
-						::mod_irc::say::reply PRIVATE NICK [format {Company %d (%s): %s} $number [lindex $::mainloop::company($number) 0] [lindex $::mainloop::company($number) 1]]
+				if {[array size ::mainloop::company] > 0} {
+					for {variable number 1} {$number < [array size ::mainloop::company]} {incr number} {
+						# we only want the company if founding date > 1
+						if {[lindex $::mainloop::company($number) 3] > 1} {
+							::mod_irc::say::reply PRIVATE NICK [::msgcat::mc game_company_list_item $number [lindex $::mainloop::company($number) 0] [lindex $::mainloop::company($number) 1]]
+						}
 					}
+				} else {
+					::mod_irc::say::reply PRIVATE NICK [::msgcat::mc game_company_list_empty]
 				}
 			}]
 		}
@@ -233,7 +237,7 @@ namespace eval ::mod_irc {
 		# construct the newgrf list and send according to command received
 		proc newgrf_list {target nick} {
 			if {![::mod_irc::chatIsPrivate $target]} {
-				::mod_irc::say::public "$nick: this command can only be used in a private message"
+				::mod_irc::say::public [::msgcat::mc game_grflist_private $nick]
 			} else {
 				
 				if {[info exists ::apconfig::newgrf]} {
@@ -241,9 +245,9 @@ namespace eval ::mod_irc {
 					foreach newgrf $::apconfig::newgrf {
 						::mod_irc::say::private $nick [lindex $newgrf 0]
 					}
-					::mod_irc::say::private $nick "$::lang::newgrf_end"
+					::mod_irc::say::private $nick [::msgcat::mc game_grflist_end]
 				} else {
-					::mod_irc::say::private $nick "No NewGRF's Loaded"
+					::mod_irc::say::private $nick [::msgcat::mc game_grflist_none]
 				}
 			}
 		}
@@ -258,13 +262,13 @@ namespace eval ::mod_irc {
 				if { $::players > 0 } {
 					foreach {number} [lsort [array names ::mainloop::player]] {
 						if {[lindex $::mainloop::player($number) 1] > $max_companies} {
-							::mod_irc::say::reply PRIVATE NICK [format {Player %d is %s, a spectator} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
+							::mod_irc::say::reply PRIVATE NICK [::msgcat::mc game_client_list_spec [lindex $::mainloop::player($number) 4] [lindex $::mainloop::player($number) 0]]
 						} else {
-							::mod_irc::say::reply PRIVATE NICK [format {Player %d (%s) is %s, in company %d (%s)} [lindex $::mainloop::player($number) 4] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 0] [lindex $::mainloop::player($number) 0] [lindex $::mainloop::player($number) 1] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 1]]
+							::mod_irc::say::reply PRIVATE NICK [::msgcat::mc game_client_list_comp [lindex $::mainloop::player($number) 4] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 0] [lindex $::mainloop::player($number) 0] [lindex $::mainloop::player($number) 1] [lindex $::mainloop::company([lindex $::mainloop::player($number) 1]) 1]]
 						}
 					}
 				} else {
-					::mod_irc::say::reply PRIVATE NICK $::lang::no_players_connected_to_server
+					::mod_irc::say::reply PRIVATE NICK [::msgcat::mc game_client_list_none]
 				}
 			}]
 		}
@@ -412,7 +416,7 @@ namespace eval ::mod_irc {
 						}
 					}
 					{save} {
-						::ap::say::everywhere $::lang::saving_game
+						::ap::say::everywhere [::msgcat::mc game_saving]
 						::ap::game::save
 					}
 					{newgrf} {
@@ -435,7 +439,7 @@ namespace eval ::mod_irc {
 					}
 					{rcon} {
 						if {[::ap::config::isEnabled autopilot irc_rcon]} {
-							puts "\[AP\] rcon via irc from [who]"
+							puts [::msgcat::mc dbg_irc_rcon_request [who]]
 							if {[::mod_irc::nickIsOp [who]]} {
 								variable buf [::ap::game::consoleCapture "[join [lrange $bang_command 1 end]]\r"]
 								foreach line $buf {
@@ -446,8 +450,8 @@ namespace eval ::mod_irc {
 							} elseif {$isPrivate && [lindex $bang_command 1] == [::ap::config::get network rcon_password]} {
 								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
 							} else {
-								puts "\[AP\] rcon via irc from [who] not accepted!"
-								::mod_irc::say::public "[who]: you are not allowed to use !rcon"
+								puts [::msgcat::mc dbg_irc_rcon_denied [who]]
+								::mod_irc::say::public [::msgcat::mc irc_rcon_denied [who]]
 							}
 						}
 					}
@@ -456,7 +460,7 @@ namespace eval ::mod_irc {
 						
 						if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"]} {
 							if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
-								::ap::debug [namespace current] "no callback file found for \"[lindex $bang_command 0]\""
+								::ap::debug [namespace current] [::msgcat::mc dbg_callback_not_found [lindex $bang_command 0]]
 							}
 						}
 					}

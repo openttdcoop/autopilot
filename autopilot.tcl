@@ -19,6 +19,7 @@ exec tclsh $0 $@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+package require msgcat
 package require Expect
 log_user 0
 
@@ -38,20 +39,21 @@ namespace eval mainloop {
 # Fetch in our library of functions
 source autopilot/libs/main.tcl
 
+# Read in values from openttd.cfg
+# namespace apconfig contains only configuration lists
+::ap::config::load $inifilename
+
+# load language definitions
+::msgcat::mclocale [::ap::config::get autopilot language en]
+::msgcat::mcload autopilot/lang
+
 # Our version - if you modify and redistribute, please change this
 # string to reflect the fact that this autopilot isn't the original
 # autopilot by Brian Ronald.
 set version [::ap::func::getApVersion]
 
-# Read in values from openttd.cfg
-# namespace apconfig contains only configuration lists
-::ap::config::load $inifilename
-
-# Load the language file
-source autopilot/lang/[::ap::config::get autopilot language].tcl
-
 if {![info exists ::ap::config::autopilot]} {
-	error "autopilot configuration section not loaded from $inifilename"
+	error [::msgcat::mc dbg_autopilot_no_config $inifilename]
 	exit 1
 }
 
@@ -75,33 +77,33 @@ if {[set openttd [::ap::config::get autopilot command]] == {} } {
 	set openttd {./openttd}
 }
 
-::ap::game::output $::lang::engaged
+::ap::game::output [::msgcat::mc autopilot_engaged]
 set arg1 [ lindex $argv 0 ]
 set arg2 [ lindex $argv 1 ]
 if { [ string equal "$arg1" "load" ] } {
 	if { [ string length $arg2 ] > 0 } {
 		set commandline "$openttd -c $inifilename -D -g $arg2"
-		::ap::game::output [format $::lang::loadspec [::ap::config::get network server_name]]
+		::ap::game::output [::msgcat::mc game_start_save [::ap::config::get network server_name]]
 	} else {
 		set commandline "$openttd -c $inifilename -D -g save/game.sav"
-		::ap::game::output [format $::lang::loaddef [::ap::config::get network server_name]]
+		::ap::game::output [::msgcat::mc game_start_default [::ap::config::get network server_name]]
 	}
 } else {
 	set commandline "$openttd -c $inifilename -D"
-	::ap::game::output [format $::lang::startnew [::ap::config::get network server_name]]
-	::ap::game::output [format $::lang::landscape_is [::ap::config::get game_creation landscape]]
+	::ap::game::output [::msgcat::mc game_start_new [::ap::config::get network server_name]]
+	::ap::game::output [::msgcat::mc game_spec_landscape [::ap::config::get game_creation landscape]]
 	if {[::ap::config::get game_creation map_y] != {}} {
-		::ap::game::output [format $::lang::map_dimensions [expr (pow(2,[::ap::config::get game_creation map_y]))] [expr (pow(2,[::ap::config::get game_creation map_x]))]]
+		::ap::game::output [::msgcat::mc game_spec_dimensions [expr (pow(2,[::ap::config::get game_creation map_y]))] [expr (pow(2,[::ap::config::get game_creation map_x]))]]
 	} else {
-		::ap::game::output [format $::lang::map_dimensions [expr (pow(2,[::ap::config::get patches map_y]))] [expr (pow(2,[::ap::config::get patches map_x]))]]
+		::ap::game::output [::msgcat::mc game_spec_dimensions [expr (pow(2,[::ap::config::get patches map_y]))] [expr (pow(2,[::ap::config::get patches map_x]))]]
 	}
 	if {[::ap::config::get game_creation starting_year] != {}} {
-		::ap::game::output [format $::lang::start_year [::ap::config::get game_creation starting_year]]
+		::ap::game::output [::msgcat::mc game_spec_start_year [::ap::config::get game_creation starting_year]]
 	} else {
 		if {[::ap::config::get patches starting_year] != {}} {
-			::ap::game::output [format $::lang::start_year [::ap::config::get patches starting_year]]
+			::ap::game::output [::msgcat::mc game_spec_start_year [::ap::config::get patches starting_year]]
 		} else {
-			::ap::game::output [format $::lang::start_year [::ap::config::get patches starting_date]]
+			::ap::game::output [::msgcat::mc game_spec_start_year [::ap::config::get patches starting_date]]
 		}
 	}
 
@@ -139,9 +141,6 @@ if {[namespace exists ::mod_db]} {
 
 # Set some expect variables
 set spawn_id $ds
-
-# Set the status bar
-set ap_status $::lang::initializing
 
 # Initialize the OpenTTD Console with useful aliases for ap
 ::ap::game::initConsole
@@ -233,9 +232,6 @@ namespace eval mainloop {
 	# and we lose count
 	::ap::func::every [::ap::config::get autopilot recount_frequency] ::ap::count::players
 	
-	# Set the status bar
-	set ::ap_status [format $::lang::players 0]
-	
 	while true {
 		expect {
 			-re ".*\n" {
@@ -277,7 +273,7 @@ namespace eval mainloop {
 						
 										if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/game/$filename"]} {
 											if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
-												::ap::debug [namespace current] "no callback file found for \"[lindex $bang_command 0]\""
+												::ap::debug [namespace current] [::msgcat::mc dbg_callback_not_found [lindex $bang_command 0]]
 											}
 										}
 									}
@@ -372,19 +368,17 @@ namespace eval mainloop {
 						}   
 						if {[string match doneclientcount $linestr]} {
 							set ::players [array size player]
-							# Set the status bar
-							set ::ap_status [format $::lang::players $::players]
 						}
 						if {[string first {Map sucessfully saved to} $linestr] == 0} {
-							::ap::say::everywhere $::lang::map_saved
+							::ap::say::everywhere [::msgcat::mc game_saved]
 						}
 					}
 				}
 			}
 			eof {
-				::ap::game::output $::lang::server_exited
+				::ap::game::output [::msgcat::mc game_quite_message]
 				if {[namespace exists ::mod_db]} {
-					::mod_db::network::quit $::lang::admin_quit
+					::mod_db::network::quit [::msgcat::mc game_quit_by_admin]
 				}
 				update
 				exec echo {} > $pidfile
@@ -395,24 +389,24 @@ namespace eval mainloop {
 		if $use_console {
 			expect_user {
 				"quit\n" {
-					::ap::say::everywhere $::lang::admin_quit
+					::ap::say::everywhere [::msgcat::mc game_quit_by_admin]
 					::ap::game::quit
 				}
 				"exit\n" {
-					::ap::say::everywhere $::lang::admin_quit
-					::ap::say::everywhere $::lang::saving_game
+					::ap::say::everywhere [::msgcat::mc game_quit_by_admin]
+					::ap::say::everywhere [::msgcat::mc game_saving]
 					::ap::game::save
 					::ap::game::quit
 				}
 				"save\n" {
-					::ap::say::everywhere $::lang::saving_game
+					::ap::say::everywhere [::msgcat::mc game_saving]
 					::ap::game::save
 				}
 				"version\n" {
 					puts $::version
 				}
 				"license\n" {
-					puts $::lang::license
+					puts [::msgcat::mc autopilot_license]
 				}
 				-re "(.*)\n" {
 					::ap::game::console "$expect_out(1,string)\r"
