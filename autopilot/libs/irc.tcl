@@ -51,13 +51,6 @@ namespace eval ::mod_irc {
 			::mod_irc::network::send "NOTICE $nick :$message"
 		}
 
-		# (depricated) chat publicly to channel
-		proc channel {nick {message {}}} {
-			::ap::debug [namespace current]::channel depricated
-			set message [::ap::func::getChatMessage $nick $message]
-			::mod_irc::say::public $message
-		}
-		
 		# public chat
 		proc public {nick {message {}}} {
 			set message [::ap::func::getChatMessage $nick $message]
@@ -87,7 +80,7 @@ namespace eval ::mod_irc {
 			if {[::mod_irc::chatIsPrivate $target]} {
 				::mod_irc::say::private $target $message
 			} else {
-				::mod_irc::say::channel $message
+				::mod_irc::say::public $message
 			}
 		}
 
@@ -240,7 +233,7 @@ namespace eval ::mod_irc {
 		# construct the newgrf list and send according to command received
 		proc newgrf_list {target nick} {
 			if {![::mod_irc::chatIsPrivate $target]} {
-				::mod_irc::say::channel "$nick: this command can only be used in a private message"
+				::mod_irc::say::public "$nick: this command can only be used in a private message"
 			} else {
 				
 				if {[info exists ::apconfig::newgrf]} {
@@ -454,7 +447,7 @@ namespace eval ::mod_irc {
 								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
 							} else {
 								puts "\[AP\] rcon via irc from [who] not accepted!"
-								::mod_irc::say::channel "[who]: you are not allowed to use !rcon"
+								::mod_irc::say::public "[who]: you are not allowed to use !rcon"
 							}
 						}
 					}
