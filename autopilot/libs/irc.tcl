@@ -70,6 +70,39 @@ namespace eval ::mod_irc {
 				::mod_irc::say::public $nick $message
 			}
 		}
+		
+		namespace eval more {
+			array set ::mod_irc::say::more::buffer {}
+			
+			proc add {nick message} {
+				lappend ::mod_irc::say::more::buffer($nick) $message
+			}
+			
+			proc clear {nick} {
+				set ::mod_irc::say::more::buffer($nick) {}
+			}
+			
+			proc size {nick} {
+				return [llength $::mod_irc::say::more::buffer($nick)]
+			}
+			
+			proc get {nick} {
+				variable message [lindex $::mod_irc::say::more::buffer($nick) 0]
+				set ::mod_irc::say::more::buffer($nick) [lrange $::mod_irc::say::more::buffer($nick) 1 end]
+				return $message
+			}
+			
+			proc sendNext {nick {num 1} {private false}} {
+				for {set i 0} {$i < $num} {incr i} {
+					::mod_irc::say::reply $private $nick [get $nick]
+				}
+				sendStatus $nick $private
+			}
+			
+			proc sendStatus {nick {private false}} {
+				::mod_irc::say::reply $private $nick [format "there are %d more messages" [size $nick]]
+			}
+		}
 	}
 
 	namespace eval do {
@@ -406,6 +439,19 @@ namespace eval ::mod_irc {
 			if $bang_command_incomplete {
 				# Built-in !bang-commands which can be overriden
 				case [lindex $bang_command 0] {
+					{more} {
+						variable arg [lindex $bang_command 1]
+						
+						if {$arg == {clear}} {
+							::mod_irc::say::more::clear [who]
+						} elseif {$arg == {status}} {
+							::mod_irc::say::more::sendStatus [who] [::mod_irc::chatIsPrivate [target]]
+						} elseif {[string is integer $arg] && $arg > 0} {
+							::mod_irc::say::more::sendNext [who] $arg [::mod_irc::chatIsPrivate [target]]
+						} else {
+							::mod_irc::say::more::sendNext [who] {1} [::mod_irc::chatIsPrivate [target]]
+						}
+					}
 					{version} {
 						::mod_irc::say::reply $isPrivate [who] $::version
 					}
