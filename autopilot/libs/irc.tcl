@@ -48,17 +48,30 @@ namespace eval ::mod_irc {
 
 		# Procedure to send IRC notices
 		proc notice {nick message} {
+			if {[string length $message] == 0} {
+				return
+			}
+			
 			::mod_irc::network::send "NOTICE $nick :$message"
 		}
 
 		# public chat
 		proc public {nick {message {}}} {
 			set message [::ap::func::getChatMessage $nick $message]
+			
+			if {[string length $message] == 0} {
+				return
+			}
+			
 			::mod_irc::network::send "PRIVMSG $::mod_irc::config::channel :$message"
 		}
 		
 		# private chat
 		proc private {nick message} {
+			if {[string length $message] == 0} {
+				return
+			}
+			
 			::mod_irc::network::send "PRIVMSG $nick :$message"
 		}
 		
@@ -83,24 +96,57 @@ namespace eval ::mod_irc {
 			}
 			
 			proc size {nick} {
+				if {[array names ::mod_irc::say::more::buffer -exact $nick] == {}} {
+					return 0
+				}
+				
 				return [llength $::mod_irc::say::more::buffer($nick)]
 			}
 			
 			proc get {nick} {
-				variable message [lindex $::mod_irc::say::more::buffer($nick) 0]
-				set ::mod_irc::say::more::buffer($nick) [lrange $::mod_irc::say::more::buffer($nick) 1 end]
+				variable message {}
+				
+				if {[array names ::mod_irc::say::more::buffer -exact $nick] != {}} {
+					set message [lindex $::mod_irc::say::more::buffer($nick) 0]
+					set ::mod_irc::say::more::buffer($nick) [lrange $::mod_irc::say::more::buffer($nick) 1 end]
+				}
+				
 				return $message
 			}
 			
-			proc sendNext {nick {num 1} {private false}} {
-				for {set i 0} {$i < $num} {incr i} {
+			proc sendNext {nick {num {}} {private false}} {
+				if {$num > [::ap::config::get autopilot irc_more_flush_lines 5] || $num == {}} {
+					set num [::ap::config::get autopilot irc_more_flush_lines 5]
+				}
+				
+				if {$num > [size $nick]} {
+					set num [size $nick]
+				}
+				
+				after cancel ::mod_irc::say::more::clear $nick
+				
+				for {variable i 0} {$i < $num} {incr i} {
 					::mod_irc::say::reply $private $nick [get $nick]
 				}
-				sendStatus $nick $private
+				
+				after [expr [::ap::config::get autopilot irc_more_timeout 120] * 1000] ::mod_irc::say::more::clear $nick
+				
+				if {[size $nick] > 0} {
+					sendStatus $nick $private
+				}
 			}
 			
 			proc sendStatus {nick {private false}} {
-				::mod_irc::say::reply $private $nick [format "there are %d more messages" [size $nick]]
+				variable num [size $nick]
+				variable msg [::msgcat::mc irc_more_none]
+				
+				if {$num == 1} {
+					set msg [::msgcat::mc irc_more_one]
+				} elseif {$num > 1} {
+					set msg [::msgcat::mc irc_more_many $num]
+				}
+				
+				::mod_irc::say::reply $private $nick $msg
 			}
 		}
 	}

@@ -15,4 +15,4 @@ foreach line [split $data "\n"] {
 	}
 }
 
-::mod_irc::say::more::sendNext [who] 5 [private]
+::mod_irc::say::more::sendNext [who] {} [private]

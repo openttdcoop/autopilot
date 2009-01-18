@@ -55,6 +55,10 @@
 	irc_channel_joined        {IRC channel joined}
 	irc_rcon_denied           {%s: you are not allowed to use !rcon}
 
+	irc_more_none             {you have no more messages}
+	irc_more_one              {you have one more message}
+	irc_more_many             {you have %d more messages}
+
 	dbg_callback_not_found   {no callback file found: %s}
 	dbg_callback_failed      {%s failed with %s}
 
