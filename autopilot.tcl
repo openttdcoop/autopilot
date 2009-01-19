@@ -44,7 +44,7 @@ source autopilot/libs/main.tcl
 ::ap::config::load $inifilename
 
 # load language definitions
-::msgcat::mclocale [::ap::config::get autopilot language en]
+::msgcat::mclocale [::ap::config::getLanguage en]
 ::msgcat::mcload autopilot/lang
 
 # Our version - if you modify and redistribute, please change this
