@@ -490,12 +490,12 @@ namespace eval ::mod_irc {
 						
 						if {$arg == {clear}} {
 							::mod_irc::say::more::clear [who]
-						} elseif {$arg == {status}} {
-							::mod_irc::say::more::sendStatus [who] [::mod_irc::chatIsPrivate [target]]
+						} elseif {$arg == {status} || [::mod_irc::say::more::size [who]] == 0} {
+							::mod_irc::say::more::sendStatus [who] $isPrivate
 						} elseif {[string is integer $arg] && $arg > 0} {
-							::mod_irc::say::more::sendNext [who] $arg [::mod_irc::chatIsPrivate [target]]
+							::mod_irc::say::more::sendNext [who] $arg $isPrivate
 						} else {
-							::mod_irc::say::more::sendNext [who] {1} [::mod_irc::chatIsPrivate [target]]
+							::mod_irc::say::more::sendNext [who] {1} $isPrivate
 						}
 					}
 					{version} {
@@ -531,20 +531,34 @@ namespace eval ::mod_irc {
 					}
 					{rcon} {
 						if {[::ap::config::isEnabled autopilot irc_rcon]} {
-							puts [::msgcat::mc dbg_irc_rcon_request [who]]
+							variable allow_rcon false
+							
 							if {[::mod_irc::nickIsOp [who]]} {
-								variable buf [::ap::game::consoleCapture "[join [lrange $bang_command 1 end]]\r"]
-								foreach line $buf {
-									if {[string length [string trim $line]] > 0} {
-										::mod_irc::say::reply $isPrivate [who] $line
-									}
-								}
-							} elseif {$isPrivate && [lindex $bang_command 1] == [::ap::config::get network rcon_password]} {
-								::ap::game::console "[join [lrange $bang_command 1 end]]\r"
-							} else {
+								set allow_rcon true
+							} elseif {$isPrivate && [string equal [lindex $bang_command 1] [::ap::config::get network rcon_password]] && [string length [::ap::config::get network rcon_password]] > 0} {
+								set allow_rcon true
+							}
+							
+							# clear the clients more buffer
+							::mod_irc::say::more::clear [who]
+							
+							if {!$allow_rcon} {
 								puts [::msgcat::mc dbg_irc_rcon_denied [who]]
 								::mod_irc::say::public [::msgcat::mc irc_rcon_denied [who]]
+								return
 							}
+							
+							puts [::msgcat::mc dbg_irc_rcon_request [who]]
+							
+							variable buf [::ap::game::consoleCapture "[join [lrange $bang_command 1 end]]\r"]
+							
+							foreach line $buf {
+								if {[string length [string trim $line]] > 0} {
+									::mod_irc::say::more::add [who] $line
+								}
+							}
+								
+							::mod_irc::say::more::sendNext [who] {} $isPrivate
 						}
 					}
 					{default} {
