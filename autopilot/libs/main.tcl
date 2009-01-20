@@ -44,7 +44,7 @@ namespace eval ::ap {
 		
 		proc getLanguage {{default {}}} {
 			variable language [::ap::config::get autopilot language $default]
-			if { [string length $language] == 0 || ![file exist "autopilot/lang/$language.msg"] } {
+			if {![file exist "autopilot/lang/$language.msg"]} {
 				::ap::debug [namespace current] "WARNING: Language package doesn't exist, falling back to default: $default"
 				return $default
 			} else {
