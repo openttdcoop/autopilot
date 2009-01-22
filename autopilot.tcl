@@ -376,7 +376,7 @@ namespace eval mainloop {
 				}
 			}
 			eof {
-				::ap::game::output [::msgcat::mc game_quite_message]
+				::ap::game::output [::msgcat::mc game_quit_message]
 				if {[namespace exists ::mod_db]} {
 					::mod_db::network::quit [::msgcat::mc game_quit_by_admin]
 				}
