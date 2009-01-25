@@ -295,41 +295,44 @@ namespace eval mainloop {
 							set company($c_number) "{$c_color} {$c_name} $c_founded $c_money $c_loan $c_value $c_trains $c_roadvehicles $c_planes $c_ships"
 						}
 						if {[string first "*** " $linestr] == 0} {
-							# Somebody joined, left or was renamed
-							if {[string first "has joined the game" $linestr] > 0} {
-								# Joined the game.  Greet, announce and increment count.
-								set nick [lrange [split $linestr] 1 end-4]
-								
-								# We used to increment and decrement, but this also
-								# populates the player array.
-								::ap::count::players
-								
-								after $::standard_delay [string map "NICK {$nick}" {::ap::callback::execute {NICK} ::ap::game::say 1 [list {[callback] on_game_join}] {autopilot/scripts/callback/on_game_join.tcl}}]
-								
-								# Unpause if there are enough players.
-								if {[::ap::config::isEnabled autopilot save_on_join]} {
-									::ap::game::save "join_[format %x [clock seconds]]"
+							# Somebody joined, left or was renamed, or company changes occured
+							switch -regexp -- $linestr {
+								{\*{3} .* has joined the game$} {
+									# Joined the game.  Greet, announce and increment count.
+									set nick [lrange [split $linestr] 1 end-4]
+									
+									# We used to increment and decrement, but this also
+									# populates the player array.
+									::ap::count::players
+									
+									after $::standard_delay [string map "NICK {$nick}" {::ap::callback::execute {NICK} ::ap::game::say 1 [list {[callback] on_game_join}] {autopilot/scripts/callback/on_game_join.tcl}}]
+									
+									# Unpause if there are enough players.
+									if {[::ap::config::isEnabled autopilot save_on_join]} {
+										::ap::game::save "join_[format %x [clock seconds]]"
+									}
+									if {$::players > $::pause_level && $::pause_level >= 0} {
+										::ap::game::unpause
+									}
 								}
-								if {$::players > $::pause_level && $::pause_level >= 0} {
-									::ap::game::unpause
+								{\*{3} .* has left the game .*$} {
+									# Left the game.  Announce and decrement count.
+									::ap::say::fromGame "*** [join [lrange $line 1 end]]"
+									# We used to increment and decrement, but this also
+									# populates the player array.
+									::ap::count::players
+									# Pause if there are too few players.
+									if {$::players <= $::pause_level && $::pause_level >= 0} {
+										::ap::game::pause
+										::ap::game::save
+									}
 								}
-							}
-							if {[string first "has left the game" $linestr] > 0} {
-								# Left the game.  Announce and decrement count.
-								::ap::say::fromGame "*** [join [lrange $line 1 end]]"
-								# We used to increment and decrement, but this also
-								# populates the player array.
-								::ap::count::players
-								# Pause if there are too few players.
-								if {$::players <= $::pause_level && $::pause_level >= 0} {
-									::ap::game::pause
-									::ap::game::save
+								{\*{3} .* has changed his/her name to .*$} -
+								{\*{3} .* has joined (:?company #\d+|spectators)$} -
+								{\*{3} .* has started a new company .*$} {
+									::ap::say::fromGame "*** [lrange $line 1 end]"
+									::ap::count::players
 								}
-							}
-							if {[string first "has changed his/her name to" $linestr] >0} {
-								# Player changed name.  Announce the fact.
-								::ap::say::fromGame "*** [lrange $line 1 end]"
-								::ap::count::players
 							}
 						}
 						if {[string first "Current/maximum companies: " $linestr] == 0} {
