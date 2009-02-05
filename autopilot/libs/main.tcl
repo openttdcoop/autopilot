@@ -286,12 +286,12 @@ namespace eval ::ap {
 		proc map_strings {str} {
 			return [string map "
 				COMPANIES {$::companies}
-				EMAIL [::ap::config::get autopilot email]
-				LICENSE [::msgcat::mc autopilot_license]
+				EMAIL {[::ap::config::get autopilot email]}
+				LICENSE {[::msgcat::mc autopilot_license]}
 				OTTD {$::ottd_version}
 				PASSWORD {$::password}
 				PLAYERS {$::players}
-				URL [::ap::config::get autopilot url]
+				URL {[::ap::config::get autopilot url]}
 				VERSION {$::version}
 			" $str]
 		}
