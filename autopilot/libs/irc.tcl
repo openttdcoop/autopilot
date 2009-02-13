@@ -460,10 +460,10 @@ namespace eval ::mod_irc {
 				::mod_irc::do::ctcpReply [who] {version} $::version
 			}
 			# no need to continue processing!
-		} elseif {[string first $::mod_irc::config::commandchar [msg]] == 0 || $isPrivate} {
+		} elseif {[string first $::mod_irc::config::commandchar [string trim [msg]]] == 0 || $isPrivate} {
 			
 			# get the bang command
-			set bang_command [split [msg]]
+			set bang_command [split [string trim [msg]]]
 			if {[string first $::mod_irc::config::commandchar $bang_command] == 0} {
 				set bang_command [string range $bang_command 1 end]
 			}
