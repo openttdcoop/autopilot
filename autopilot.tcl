@@ -233,7 +233,7 @@ namespace eval mainloop {
 							# this looks like an assertion... just make sure it is one
 							if {[string first {Assertion} $linestr] > -1} {
 								# output it to irc, as the app will soon die
-								::ap::say::fromGame [string replace $linestr [string first {/} $linestr] [string first {/openttd/src/} $linestr]]
+								::ap::say::fromGame [string replace $linestr [string first {/} $linestr] [string first {/src/} $linestr]]
 							}
 						} elseif {[string first {[All] } $linestr] == 0 || [string first {[Private] } $linestr] == 0} {
 							set chat [regexp -inline -- {\[(All|Private)\] (.+?): (.*)} $linestr]
