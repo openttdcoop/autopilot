@@ -146,27 +146,9 @@ set spawn_id $ds
 ::ap::game::initConsole
 
 # Send some one-off commands to the server
-if {[::ap::config::get network net_frame_freq] != {}} {
-	::ap::game::console "net_frame_freq [::ap::config::get network net_frame_freq]\r"
-} {
-	::ap::game::console "net_frame_freq 2\r"
-}
 
-# ap does not want any debug levels - run openttd without autopilot for debuging, preferably in gdb
-::ap::game::console "debug_level net=0\r"
-
-# Some versions of openttd don't read these settings, so autopilot will
-if {[::ap::config::get network max_companies] != {}} {
-#	::ap::game::console "max_companies [::ap::config::get network max_companies]\r"
-}
-
-if {[::ap::config::get network max_clients] != {}} {
-#	::ap::game::console "max_clients [::ap::config::get network max_clients]\r"
-}
-
-if {[::ap::config::get network max_spectators] != {}} {
-#	::ap::game::console "max_spectators [::ap::config::get network max_spectators]\r"
-}
+# set the debug level according to the autopilot config setting!
+::ap::game::console "debug_level \"[::ap::config::get autopilot debug_level]\"\r"
 
 # only pause a new game if 'pause_on_newgame' is enabled
 if {[::ap::config::isEnabled gui pause_on_newgame] || [::ap::config::isEnabled patches pause_on_newgame]} {
@@ -244,7 +226,16 @@ namespace eval mainloop {
 						set line [split $linestr]
 						# Get this far, and we have exactly one line of output from the server.
 						# Now we have fun with ifs and cases!
-						if {[string first {[All] } $linestr] == 0 || [string first {[Private] } $linestr] == 0} {
+						if {[string first {dbg: } $linestr] == 0} {
+							# this is debug output, just output the info to the console
+							puts $linestr
+						} elseif {[string first {openttd: } $linestr] == 0 && [::ap::config::isEnabled autopilot catch_assert]} {
+							# this looks like an assertion... just make sure it is one
+							if {[string first {Assertion} $linestr] > -1} {
+								# output it to irc, as the app will soon die
+								::ap::say::fromGame [string replace $linestr [string first {/} $linestr] [string first {/openttd/src/} $linestr]]
+							}
+						} elseif {[string first {[All] } $linestr] == 0 || [string first {[Private] } $linestr] == 0} {
 							set chat [regexp -inline -- {\[(All|Private)\] (.+?): (.*)} $linestr]
 							
 							set nick [lindex $chat 2]
