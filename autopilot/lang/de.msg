@@ -48,6 +48,8 @@
 	game_grflist_end         {Ende der NewGRF Liste}
 	game_grflist_private     {%s: dieser Befehl kann nur in per privater Nachricht ausgeführt werden}
 	
+	game_password_none       {Es gibt kein Passwort!}
+	
 	game_quit_message        {Server beendet}
 	game_quit_by_admin       {Server wurde von einem Administrator geschlossen}
 

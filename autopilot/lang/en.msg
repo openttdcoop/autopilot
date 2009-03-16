@@ -48,6 +48,8 @@
 	game_grflist_end         {End of newgrf list}
 	game_grflist_private     {%s: this command can only be used in a private message}
 	
+	game_password_none       {there is no password!}
+	
 	game_quit_message        {Server has exited}
 	game_quit_by_admin       {Server closed down by admin}
 

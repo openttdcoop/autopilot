@@ -77,6 +77,11 @@ namespace eval ::mod_irc {
 		
 		# reply as has been addressed
 		proc reply {private nick message} {
+			# do not send empty messages
+			if {$message == {}} {
+				return
+			}
+			
 			if {$private} {
 				::mod_irc::say::private $nick $message
 			} else {
