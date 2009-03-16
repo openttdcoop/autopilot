@@ -324,9 +324,9 @@ namespace eval ::mod_irc {
 				::mod_irc::say::public [::msgcat::mc game_grflist_private $nick]
 			} else {
 				
-				if {[info exists ::apconfig::newgrf]} {
+				if {[info exists ::ap::config::newgrf]} {
 					::mod_irc::say::private $nick {[newgrf]}
-					foreach newgrf $::apconfig::newgrf {
+					foreach newgrf $::ap::config::newgrf {
 						::mod_irc::say::private $nick [lindex $newgrf 0]
 					}
 					::mod_irc::say::private $nick [::msgcat::mc game_grflist_end]
