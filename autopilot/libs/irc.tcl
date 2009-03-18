@@ -380,6 +380,14 @@ namespace eval ::mod_irc {
 	
 	# register some callback events
 	
+	# we get an EOF event call if something else than us closes the socket!
+	$::mod_irc::irc registerevent EOF {
+		::ap::debug [namespace parent] [::msgcat::mc dbg_irc_eof]
+		after $::standard_delay {
+			::mod_irc::network::connect
+		}
+	}
+	
 	# only join our channel once we have the motd ;-)
 	$::mod_irc::irc registerevent 376 {
 		# identify with nickserv if required

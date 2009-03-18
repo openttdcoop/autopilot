@@ -64,6 +64,7 @@
 	dbg_callback_not_found   {Keine callback file gefunden: %s}
 	dbg_callback_failed      {%s gescheitert mit %s}
 
+	dbg_irc_eof               {IRC verbindung unerwartet geschlossen, verbinde erneut}
 	dbg_irc_rcon_request      {[AP] rcon via irc von %s}
 	dbg_irc_rcon_denied       {[AP] rcon via irc von %s nicht akzeptiert!}
 
