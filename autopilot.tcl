@@ -370,11 +370,15 @@ namespace eval mainloop {
 				}
 			}
 			eof {
+				# wait for the client process to quit
+				exp_wait
+				
 				::ap::game::output [::msgcat::mc game_quit_message]
+				
 				if {[namespace exists ::mod_db]} {
 					::mod_db::network::quit [::msgcat::mc game_quit_by_admin]
 				}
-				update
+				
 				exec echo {} > $pidfile
 				break;
 			}
