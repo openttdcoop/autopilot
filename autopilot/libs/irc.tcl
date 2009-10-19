@@ -508,7 +508,7 @@ namespace eval ::mod_irc {
 						} elseif {[string is integer $arg] && $arg > 0} {
 							::mod_irc::say::more::sendNext [who] $arg $isPrivate
 						} else {
-							::mod_irc::say::more::sendNext [who] {1} $isPrivate
+							::mod_irc::say::more::sendNext [who] [::ap::config::get autopilot irc_more_flush_lines 5] $isPrivate
 						}
 					}
 					{version} {
