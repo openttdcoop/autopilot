@@ -121,7 +121,8 @@ namespace eval ::ap {
 				}
 				-re ".+?\n" {
 					foreach response [split $expect_out(buffer) "\r\n"] {
-						if {[string first $response {donecapture}] == -1 && [string length $response] > 0} {
+						regexp -nocase {^(\[\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\])\s+(.*)} $response oresponse timestamp response
+						if {[string match {*donecapture} $response] == 0 && [string length $response] > 0} {
 							lappend buf $response
 							exp_continue
 						}

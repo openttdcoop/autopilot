@@ -223,6 +223,7 @@ namespace eval mainloop {
 				foreach linestr [split [string map {"\r" {} } $out_buffer] "\n"] {
 					# You'll get at least one empty from the split
 					if {$linestr != {} } {
+						regexp -nocase {^(\[\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d\])\s+(.*)} $linestr line timestamp linestr
 						set line [split $linestr]
 						# Get this far, and we have exactly one line of output from the server.
 						# Now we have fun with ifs and cases!
@@ -288,9 +289,9 @@ namespace eval mainloop {
 						if {[string first "*** " $linestr] == 0} {
 							# Somebody joined, left or was renamed, or company changes occured
 							switch -regexp -- $linestr {
-								{\*{3} .* has joined the game$} {
+								{\*{3} .* has joined the game .*$} {
 									# Joined the game.  Greet, announce and increment count.
-									set nick [lrange [split $linestr] 1 end-4]
+									set nick [lrange [split $linestr] 1 end-6]
 									
 									# We used to increment and decrement, but this also
 									# populates the player array.
