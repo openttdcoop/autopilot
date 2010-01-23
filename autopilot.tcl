@@ -323,7 +323,7 @@ namespace eval mainloop {
 								{\*{3} .* has joined (:?company #\d+|spectators)$} -
 								{\*{3} .* has started a new company .*$} - 
 								{\*{3} Game paused \(not enough players\)$} -
-								{\*{3} Game unpaused \(enough players\)$} {
+								{\*{3} Game unpaused \((not )*enough players\)$} {
 									::ap::say::fromGame "*** [lrange $line 1 end]"
 									::ap::count::players
 								}
