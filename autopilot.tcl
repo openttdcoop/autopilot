@@ -324,6 +324,7 @@ namespace eval mainloop {
 								{\*{3} .* has started a new company .*$} - 
                                                                 {\*{3} Game (un)*paused \(manual\)$} -
                                                                 {\*{3} Game (un)*paused \(number of players\)$} -
+                                                                {\*{3} Game still paused \((manual, )*number of players\)$} -
 								{\*{3} Game (un)*paused \((not )*enough players\)$} {
 									::ap::say::fromGame "*** [lrange $line 1 end]"
 									::ap::count::players
