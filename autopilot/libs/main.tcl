@@ -235,12 +235,13 @@ namespace eval ::ap {
 	namespace eval func {
 		
 		proc getApVersion {} {
-			if { [catch { exec svnversion } msg] } {
-				set svn_version {}
+			if { [catch { exec hg id -n } msg] } {
+				set hg_version {}
 			} else {
-				set svn_version " (r$msg)"
+				catch { exec hg id -i } hash
+				set hg_version " (r$msg.$hash)"
 			}
-			return "Autopilot AP+ 3.0 Beta$svn_version"
+			return "Autopilot AP+ 4.0 Beta$hg_version"
 		}
 		
 		proc getChatMessage {nick message} {
