@@ -1,0 +1,4 @@
+^autopilot\.pid$
+^hs\.dat$
+^openttd\.cfg$
+^save/
