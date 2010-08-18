@@ -1,4 +1,19 @@
 ^autopilot\.pid$
+
+# OpenTTD specific ignores:
+^ai/
+^changelog.txt$
+^COPYING$
+^data/
+^docs/
+^gm/
 ^hs\.dat$
+^known-bugs.txt$
+^lang/
+^man/
+^media/
+^openttd$
 ^openttd\.cfg$
+^readme.txt$
 ^save/
+^scripts/
