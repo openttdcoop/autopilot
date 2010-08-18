@@ -3,6 +3,7 @@
 # OpenTTD specific ignores:
 ^ai/
 ^changelog.txt$
+^content_download/
 ^COPYING$
 ^data/
 ^docs/
