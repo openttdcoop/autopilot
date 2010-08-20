@@ -27,7 +27,10 @@ namespace eval ::ap {
 						variable section "[string map {{[} {} {]} {}} $line]"
 						set ::ap::config::$section {}
 					} else {
-						lappend ::ap::config::$section [join [split $line =]]
+						set delim [string first = $line]
+						variable key [string trim [string range $line 0 $delim-1]]
+						variable value [string trim [string range $line $delim+1 end]]
+						lappend ::ap::config::$section "$key $value"
 					}
 				}
 			}
