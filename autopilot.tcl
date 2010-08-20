@@ -82,14 +82,14 @@ set arg1 [ lindex $argv 0 ]
 set arg2 [ lindex $argv 1 ]
 if { [ string equal "$arg1" "load" ] } {
 	if { [ string length $arg2 ] > 0 } {
-		set commandline "$openttd -c $inifilename -D -g $arg2"
+		set commandline "$openttd -c $inifilename -D -g $arg2 [::ap::config::get autopilot command_endargs]"
 		::ap::game::output [::msgcat::mc game_start_save [::ap::config::get network server_name]]
 	} else {
-		set commandline "$openttd -c $inifilename -D -g save/game.sav"
+		set commandline "$openttd -c $inifilename -D -g save/game.sav [::ap::config::get autopilot command_endargs]"
 		::ap::game::output [::msgcat::mc game_start_default [::ap::config::get network server_name]]
 	}
 } else {
-	set commandline "$openttd -c $inifilename -D"
+	set commandline "$openttd -c $inifilename -D [::ap::config::get autopilot command_endargs]"
 	::ap::game::output [::msgcat::mc game_start_new [::ap::config::get network server_name]]
 	::ap::game::output [::msgcat::mc game_spec_landscape [::ap::config::get game_creation landscape]]
 	if {[::ap::config::get game_creation map_y] != {}} {
