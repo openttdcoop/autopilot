@@ -256,7 +256,7 @@ namespace eval mainloop {
 							} elseif {[string first {!} $lineafternick] == 0} {
 								# this is a bang_command...
 								set bang_command [split [string range $lineafternick 1 end]]
-								switch $bang_command {
+								switch -- $bang_command {
 									{version} {
 										ap::game::say::reply $private $nick $::version
 									}
