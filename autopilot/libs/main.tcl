@@ -28,8 +28,8 @@ namespace eval ::ap {
 						set ::ap::config::$section {}
 					} else {
 						set delim [string first = $line]
-						variable key [string trim [string range $line 0 $delim-1]]
-						variable value [string trim [string range $line $delim+1 end]]
+						variable key [string trim [string range $line 0 [expr $delim-1]]]
+						variable value [string trim [string range $line [expr $delim+1] end]]
 						lappend ::ap::config::$section "$key $value"
 					}
 				}
