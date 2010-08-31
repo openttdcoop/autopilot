@@ -1,4 +1,5 @@
 ^autopilot\.pid$
+^autopilot/scripts/(callback|game|global|irc)/[0-9a-zA-Z_]*.tcl
 
 # OpenTTD specific ignores:
 ^ai/
