@@ -211,8 +211,12 @@ namespace eval mainloop {
 	
 	# Start a background periodic task to recount players and
 	# companies - just in case the game "forgets" to inform us
-	# and we lose count
-	::ap::func::every [::ap::config::get autopilot recount_frequency] ::ap::count::players
+	# and we lose count, only needed when ap controls pause.
+	if { $::pause_level >= 0 } {
+		::ap::func::every [::ap::config::get autopilot recount_frequency] ::ap::count::players
+	} else {
+		::ap::count::players
+	}
 	
 	while true {
 		expect {
