@@ -530,6 +530,10 @@ namespace eval ::mod_irc {
 					{companies} {
 						::mod_irc::tell::company_list [target] [who]
 					}
+					{playercount} {
+						ap::count::players
+						::mod_irc::say::reply $isPrivate [who] "Number of players: $::players"
+					}
 					{players} {
 						::mod_irc::tell::player_list [target] [who]
 					}
