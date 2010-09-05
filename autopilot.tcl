@@ -118,18 +118,28 @@ set ottd_version [::ap::game::version $openttd]
 # Start openttd in dedicated mode
 set ds [::ap::game::start $commandline]
 
+set ::pause_level [::ap::config::get autopilot pause_level]
+
 # Create a list of passwords if that feature is enabled, and trigger
 # the recurring password randomizer
 if {[::ap::config::isEnabled autopilot randomize_password]} {
+	if { $::pause_level > 0 } {
+		set ::pw_pause $::pause_level
+	} else {
+		set ::pw_pause [::ap::config::get network min_active_clients]
+	}
+	set ::players $::pw_pause
 	set wordfile [open [::ap::config::get autopilot password_list] "r"]
 	set worddata [read -nonewline $wordfile]
 	close $wordfile
 	set passwords [split $worddata "\n"]
 	set numpasswords [llength $passwords]
 	::ap::func::every [::ap::config::get autopilot password_frequency] {
-		set ::password [::ap::func::lrandom $::passwords]
-		::ap::game::console "server_pw $::password\r"
-		::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverpw} $::password] {autopilot/scripts/callback/on_game_serverpw.tcl}
+		if { $::players >= $::pw_pause } {
+			set ::password [::ap::func::lrandom $::passwords]
+			::ap::game::console "server_pw $::password\r"
+			::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverpw} $::password] {autopilot/scripts/callback/on_game_serverpw.tcl}
+		}
 	}
 } else {
 	set ::password [::ap::config::get network server_password]
@@ -197,18 +207,17 @@ namespace eval mainloop {
 
 	# Array for players
 	array set player {}
-	
+
 	# map player names to id's
 	array set nick2id {}
-	
+
 	# company array
 	array set company {}
-	
+
 	# Whether to enable the console for commands
 	set use_console [::ap::config::get autopilot use_console]
-	set ::pause_level [::ap::config::get autopilot pause_level]
 	if $use_console {log_user 1}
-	
+
 	# Start a background periodic task to recount players and
 	# companies - just in case the game "forgets" to inform us
 	# and we lose count, only needed when ap controls pause.
@@ -242,16 +251,16 @@ namespace eval mainloop {
 							}
 						} elseif {[string first {[All] } $linestr] == 0 || [string first {[Private] } $linestr] == 0} {
 							set chat [regexp -inline -- {\[(All|Private)\] (.+?): (.*)} $linestr]
-							
+
 							set nick [lindex $chat 2]
 							set lineafternick [lindex $chat 3]
-							
+
 							set private 0
-							
+
 							if {[lindex $chat 1] == "Private"} {
 								set private 1
 							}
-							
+
 							if {$nick == $::name} {
 								# dont handle what we ourselves say!
 							} elseif {$private && [::ap::func::getClientId $nick] == 0} {
@@ -266,7 +275,7 @@ namespace eval mainloop {
 									}
 									{default} {
 										variable filename "[lindex $bang_command 0].tcl"
-						
+
 										if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/game/$filename"]} {
 											if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
 												::ap::debug [namespace current] [::msgcat::mc dbg_callback_not_found [lindex $bang_command 0]]
@@ -296,13 +305,13 @@ namespace eval mainloop {
 								{\*{3} .* has joined the game .*$} {
 									# Joined the game.  Greet, announce and increment count.
 									set nick [lrange [split $linestr] 1 end-6]
-									
+
 									# We used to increment and decrement, but this also
 									# populates the player array.
 									::ap::count::players
-									
+
 									after $::standard_delay [string map "NICK {$nick}" {::ap::callback::execute {NICK} ::ap::game::say 1 [list {[callback] on_game_join}] {autopilot/scripts/callback/on_game_join.tcl}}]
-									
+
 									# Unpause if there are enough players.
 									if {[::ap::config::isEnabled autopilot save_on_join]} {
 										::ap::game::save "join_[format %x [clock seconds]]"
@@ -325,7 +334,7 @@ namespace eval mainloop {
 								}
 								{\*{3} .* has changed his/her name to .*$} -
 								{\*{3} .* has joined (:?company #\d+|spectators)$} -
-								{\*{3} .* has started a new company .*$} - 
+								{\*{3} .* has started a new company .*$} -
                                                                 {\*{3} Game (un)*paused \(manual\)$} -
                                                                 {\*{3} Game (un)*paused \(number of players\)$} -
                                                                 {\*{3} Game still paused \((manual, )*number of players\)$} -
@@ -368,7 +377,7 @@ namespace eval mainloop {
 									set player([expr $pl_number + 1]) "{$p_name} $p_company $p_IP {[lindex $company($p_company) 0]} $p_number"
 								}
 							}
-						}   
+						}
 						if {[string match doneclientcount $linestr]} {
 							set ::players [array size player]
 						}
@@ -381,13 +390,13 @@ namespace eval mainloop {
 			eof {
 				# wait for the client process to quit
 				exp_wait
-				
+
 				::ap::game::output [::msgcat::mc game_quit_message]
-				
+
 				if {[namespace exists ::mod_db]} {
 					::mod_db::network::quit [::msgcat::mc game_quit_by_admin]
 				}
-				
+
 				exec echo {} > $pidfile
 				break;
 			}
