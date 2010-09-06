@@ -318,8 +318,10 @@ namespace eval ::ap {
 		variable private false
 		variable args {}
 		
-		proc execute {cbWho cbTarget cbPrivate cbArgs cbFile} {
+		proc execute {cbWho cbTarget cbPrivate cbArgs cbPath cbFile} {
 			
+            set cbFile [file join $cbPath [file tail $cbFile]]
+
 			if {[file exists $cbFile]} {
 				set ::ap::callback::who $cbWho
 				set ::ap::callback::target $cbTarget

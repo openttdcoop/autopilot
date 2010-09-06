@@ -404,7 +404,7 @@ namespace eval ::mod_irc {
 		::mod_irc::buffer::flush
 		
 		# run the on_irc_connect callback
-		::ap::callback::execute {} ::mod_irc::say 1 [list {[callback] on_irc_connect} [who] [target]] {autopilot/scripts/callback/on_irc_connect.tcl}
+		::ap::callback::execute {} ::mod_irc::say 1 [list {[callback] on_irc_connect} [who] [target]] {autopilot/scripts/callback/} {on_irc_connect.tcl}
 	}
 	
 	# send NAMES after joining a channel
@@ -456,7 +456,7 @@ namespace eval ::mod_irc {
 	
 	# catch kick
 	$::mod_irc::irc registerevent KICK {
-		::ap::callback::execute [who] ::mod_irc::say 1 [list {[callback] on_irc_kick} [target] [additional] [msg]] {autopilot/scripts/callback/on_irc_kick.tcl}
+		::ap::callback::execute [who] ::mod_irc::say 1 [list {[callback] on_irc_kick} [target] [additional] [msg]] {autopilot/scripts/callback/} {on_irc_kick.tcl}
 	}
 	
 	# we join OUR channel on ANY invite!
@@ -581,8 +581,8 @@ namespace eval ::mod_irc {
 					{default} {
 						variable filename "[lindex $bang_command 0].tcl"
 						
-						if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/irc/$filename"]} {
-							if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
+						if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] {autopilot/scripts/irc/} "$filename"]} {
+							if {![::ap::callback::execute [who] ::mod_irc::say $isPrivate [lrange $bang_command 0 end] {autopilot/scripts/global/} "$filename"]} {
 								::ap::debug [namespace current] [::msgcat::mc dbg_callback_not_found [lindex $bang_command 0]]
 							}
 						}

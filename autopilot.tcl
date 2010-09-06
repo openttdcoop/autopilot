@@ -138,7 +138,7 @@ if {[::ap::config::isEnabled autopilot randomize_password]} {
 		if { $::players >= $::pw_pause } {
 			set ::password [::ap::func::lrandom $::passwords]
 			::ap::game::console "server_pw $::password\r"
-			::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverpw} $::password] {autopilot/scripts/callback/on_game_serverpw.tcl}
+			::ap::callback::execute {} ::ap::game::say 0 [list {[callback] on_game_serverpw} $::password] {autopilot/scripts/callback/} {on_game_serverpw.tcl}
 		}
 	}
 } else {
@@ -276,8 +276,8 @@ namespace eval mainloop {
 									{default} {
 										variable filename "[lindex $bang_command 0].tcl"
 
-										if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/game/$filename"]} {
-											if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] "autopilot/scripts/global/$filename"]} {
+										if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] {autopilot/scripts/game/} "$filename"]} {
+											if {![::ap::callback::execute $nick ::ap::game::say $private [lrange $bang_command 0 end] {autopilot/scripts/global/} "$filename"]} {
 												::ap::debug [namespace current] [::msgcat::mc dbg_callback_not_found [lindex $bang_command 0]]
 											}
 										}
@@ -310,7 +310,7 @@ namespace eval mainloop {
 									# populates the player array.
 									::ap::count::players
 
-									after $::standard_delay [string map "NICK {$nick}" {::ap::callback::execute {NICK} ::ap::game::say 1 [list {[callback] on_game_join}] {autopilot/scripts/callback/on_game_join.tcl}}]
+									after $::standard_delay [string map "NICK {$nick}" {::ap::callback::execute {NICK} ::ap::game::say 1 [list {[callback] on_game_join}] {autopilot/scripts/callback/} {on_game_join.tcl}}]
 
 									# Unpause if there are enough players.
 									if {[::ap::config::isEnabled autopilot save_on_join]} {
