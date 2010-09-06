@@ -1,6 +1,11 @@
 ^autopilot\.pid$
 ^autopilot/scripts/(callback|game|global|irc)/[0-9a-zA-Z_]*.tcl
 
+# custom commands ignores:
+^webcam/
+^bin/webcam.sh$
+^logs/
+
 # OpenTTD specific ignores:
 ^ai/
 ^changelog.txt$
