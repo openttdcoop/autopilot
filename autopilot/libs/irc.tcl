@@ -531,8 +531,18 @@ namespace eval ::mod_irc {
 						::mod_irc::tell::company_list [target] [who]
 					}
 					{playercount} {
+						if {[catch {
+						        set spectators 0
+						        foreach id [array names ::mainloop::player] {
+						                if {[lindex $::mainloop::player($id) 1] == 255} {
+						                        incr spectators
+					        	        }
+					        	}
+						} errmsg]} {
+						        ::mod_irc::say::reply $isPrivate [who] $errmsg
+						}
 						ap::count::players
-						::mod_irc::say::reply $isPrivate [who] "Number of players: $::players"
+						::mod_irc::say::reply $isPrivate [who] "Number of players: $::players ($spectators spectators)"
 					}
 					{players} {
 						::mod_irc::tell::player_list [target] [who]
