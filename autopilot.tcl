@@ -19,6 +19,28 @@ exec tclsh $0 $@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+# sanity check - do not run as root
+if {$tcl_platform(user) == "root"} {
+    puts {WARNING}
+    puts {please do not run ap+ as user 'root'}
+    exit 1
+}
+
+# sanity check - require tcl 8.4
+if {[package vcompare [info tclversion] 8.4] < 0} {
+    puts {WARNING}
+    puts "ap+ requires at least tcl version 8.4"
+    puts "You are trying to use tcl [info patchlevel]"
+    exit 1
+}
+
+# sanity check - require unix platform
+if {$tcl_platform(platform) != {unix}} {
+    puts {WARNING}
+    puts "ap+ does not support your operating system ($tcl_platform(platform))"
+    exit 1
+}
+
 package require msgcat
 package require Expect
 log_user 0
