@@ -1,525 +1,115 @@
-Autopilot
-
-autopilot is a Tcl script which uses Tcl's Expect package to interface with
-OpenTTD's dedicated server console to provide network games with additional
-features not normally available with the game alone. This is the operator's
-manual for version 2.0 of autopilot.
-
-Contents
-
-  • 1 License
-  • 2 Overview
-      □ 2.1 Base module
-      □ 2.2 IRC module
-      □ 2.3 MySQL module
-      □ 2.4 Language
-  • 3 Configuration
-      □ 3.1 IRC
-      □ 3.2 MySQL
-      □ 3.3 openttd.cfg
-          ☆ 3.3.1 network section
-          ☆ 3.3.2 autopilot section
-      □ 3.4 responses section
-      □ 3.5 Variable substitutions
-  • 4 Use
-      □ 4.1 Chat commands
-      □ 4.2 MySQL module
-      □ 4.3 IRC module
-  • 5 Windows
-  • 6 Support
-
------
-
-License
-
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE. See the GNU General Public License for more details.
-
-Additionally, this operator's manual is Copyright © 2006 Brian Ronald.
-
-Permission is granted to copy, distribute and/or modify this document under the
-terms of the GNU Free Documentation License, Version 1.2 or any later version
-published by the Free Software Foundation; with no Invariant Sections, no
-Front-Cover Texts, and no Back-Cover Texts. A copy of the license is available
-here.
+Autopilot Readme
 
------
+Updated: 10. September 2010
+------------------------------------------------------------------------------
 
-Overview
 
-autopilot is a modular script. It comes as a set of Tcl source files. Some of
-these require that additional Tcl packages be installed in order to run.
+Index:
 
------
+    1) About
+    2) Requirements
+    3) Running Autopilot
+    4) Reporting Bugs
+    5) Known Issues
+    6) Credits
 
-Base module
+Further Documentation can be found at
+    http://wiki.openttdcoop.org/Autopilot/ap+
 
-The base module consists of autopilot.tcl, autopilot-lib.tcl and a language
-file. Alone, it provides the following features:
+1) About
+------------------------------------------------------------------------------
+    autopilot is a Tcl script which uses Tcl's Expect package to interface with
+    OpenTTD's dedicated server console to provide network games with additional
+    features not normally available with the game alone.
 
-  • Periodic automatic server password changes
-  • Implementation of max_clients, max_companies and max_spectators settings in
-    openttd.cfg (not normally available in OpenTTD revision 6280 and earlier)
-  • Implementation of net_frame_freq setting in openttd.cfg
-  • Automatic pausing of the server when the number of connected clients is
-    below a user-defined threshold
-  • Greeting of players, by name, as they join the server (up to three chat
-    lines)
-  • Changes behaviour of exit console command to save the game to game.sav
-    before closing the server
-  • Changes behaviour of save console command to use a default of game.sav if
-    no file is specified
-  • adds version and license commands to console
-  • adds an admin pager facility to the game
+    ap+, based on the original autopilot project, adds more features and allows
+    custom commands and callbacks to be put in place without requiring changes
+    be made to the source code.
 
-autopilot takes control of the server's dedicated console. Optionally, it can
-allow pass-through commands so that the server's operator can use the console
-as normal, although this comes at the price of slightly reduced responsiveness.
 
------
 
-IRC module
+2) Requirements
+------------------------------------------------------------------------------
+    Tcl 8.4 (or above)
+    Tcllib 1.11 (or above)
+    Expect 5.44 (or above)
 
-The IRC module consists of autopilot-irc.tcl, and requires that tcllib is
-installed. When enabled, it provides the following additional features:
+    For kill signal handling you will also need Tclx.
 
-  • Bridging of in-game chat with IRC channel, allowing IRC users to converse
-    with players, and vice-versa.
-  • Provides channel and privmsg commands to query the players and companies on
-    the server
-  • Provides channel and privmsg commands to show server version and newgrf
-    settings
-  • Provides privmsg rcon commands, allowing IRC users with the rcon password
-    to control the server
-  • Provides channel and privmsg commands allowing IRC users to learn the
-    current password
-  • Supports CTCP VERSION and can identify to IRC services
+    ap+ is designed to run on unix like operating systems.
+    Windows is NOT SUPPORTED
+    
 
------
 
-MySQL module
+3) Runnin Autopilot
+------------------------------------------------------------------------------
+    Most commonly ap+ is setup by placing the openttd binary and config file
+    next to the autopilot.tcl file. Append the contents of the ap+ config file
+    named openttd_additional.cfg at the end of openttd.cfg
+        cat openttd_additional.cfg >> openttd.cfg
 
-The MySQL module consists of autopilot-mysql.tcl, and requires that mysqltcl is
-installed. When enabled, it provides the following additional features:
+    Take your time and modify the newly added sections in openttd.cfg
+    Note: if you want a IRC connection, ensure that the network.client_name
+    is a valid nick name according to the irc network you want to join.
+    i.e. spaces are usually not permitted (some other chars are not either).
 
-  • Storage of the current server password in the database, to allow database
-    aware applications to reveal it
-  • Logging of in-game chat, client joins, quits and name changes to a
-    database, including logical separation of games and servers to allow for
-    many servers to log to the same database
-
-The module supports database table prefixing, to allow easy co-existence with
-other database applications.
-
------
-
-Language
-
-autopilot's messages can be easily translated to other languages by including
-additional language files. Version 2.0 comes with one language file,
-lang_english.tcl, which can be copied and modified to facilitate translation.
-The server requires that openttd be in English (at present).
-
------
-
-Configuration
-
-autopilot is configured through openttd.cfg. If a different configuration file
-is to be used, it must be specified to autopilot through the OTTD_CONFIG
-environment variable. Included with autopilot is the file
-openttd_additional.cfg, which contains the additional sections required to
-operate the script. autopilot will fail to run without this configuration.
-
------
-
-IRC
-
-If you wish autopilot to have its IRC nickname identified with services on your
-chosen network, it is necessary for the nickname to be registered in advance.
-
------
-
-MySQL
-
-In order to use the MySQL module, the script must have access to a properly
-configured MySQL server in which the tables can be found. Such configuration is
-beyond the scope of this document, except to say that the file autopilot.sql
-contains the necessary CREATE TABLE commands for a MySQL 5.0 server.
-
------
-
-openttd.cfg
-
-Here follows a line by line description of all the new openttd.cfg options used
-by autopilot. They are all specified in the form of option = value. Boolean
-values can be yes, true or on to set a feature, and anything else to un-set it.
-
------
-
-network section
-
-In the [network] section, the following commands are added:
-
-max_companies
-    Set to an integer (maximum of 8 is the default). Specify the maximum number
-    of companies allowed in the game.
-max_players
-    Set to an integer (maximum of 10 is the default). Specify the maximum
-    number of players allowed to connect to the game.
-max_spectators
-    Set to an integer (maximum of 10 is the default). Specify the maximum
-    number of spectators allowed to connect to the game.
-
------
-
-autopilot section
-
-In the [autopilot] section, the following commands are added:
-
-command
-    String value. Specifies the filename of the openttd executable (./openttd
-    for Linux, openttd.exe for Windows, etc)
-language
-    String value. Selects the language file lang_language.tcl where language is
-    the content of this setting.
-responsiveness
-    Integer value. Used when the console is enabled (see below). Amount of
-    time, in seconds, between autopilot switching its attention between the
-    console (for command entry) and the server. Lower numbers make the server
-    more responsive to commands and events, higher numbers decrease CPU use
-    slightly.
-email
-    String value. Specifies the email address of the admin. This can be used in
-    variable substitution and is the email address used by the admin pager.
-url
-    String value. Specifies a URL which can be used in variable subsitution.
-use_irc
-    Boolean value. Specifies whether to load the IRC module.
-use_mysql
-    Boolean value. Specifies whether to load the MySQL module.
-use_console
-    Boolean value. Specifies whether to enable pass-through commands to the
-    user of the console. If turned off, the server ismuch more responsive, but
-    control can only be taken through the server's rcon facility.
-randomize_password
-    Boolean value. Enables the periodic password change feature.
-password_list
-    String value. Filename of a text file containing a list of possible
-    passwords to choose from. The format should be one password per line.
-password_frequency
-    Boolean value. Number of milliseconds between password changes. 300000 is 5
-    minutes.
-pause_level
-    Integer value. autopilot will pause the game if this many clients, or less,
-    are connected to the server.
-irc_server
-    String value, used only by the IRC module. The domain name or IP address of
-    the IRC server.
-irc_port
-    Integer value, used only by the IRC module. The port on which to connect to
-    the IRC server.
-irc_user
-    String value, used only by the IRC module. The IRC username to connect
-    with.
-irc_channel
-    String value, used only by the IRC module. The IRC channel to join after
-    connecting. Must use one of # for global channels, and @ for local
-    channels.
-irc_bridge
-    Boolean value, used only by the IRC module. Specifies whether autopilot
-    will show the game chat in the IRC channel, and vice versa.
-irc_explicit_say
-    Boolean value, used only by the IRC module. If set, IRC users must use !say
-    to communicate with game players.
-irc_rcon
-    Boolean value, used only by the IRC module. Enables use of the rcon command
-    from IRC.
-irc_nickserv
-    String value, used only by the IRC module. A string to be quoted to the
-    server in order to authenticate to services.
-irc_commandchar
-    Character value, used only by the IRC module. Specifies the character that precedes a command in the channel.
-motd1
-    String value. A string to be sent to game chat when a player joins the
-    server. Uses variable substitution.
-motd2
-    as motd1
-motd3
-    as motd1
-recount_frequency
-    Integer value. Number of milliseconds between client recounts (300000 is 5
-    minutes). Used to maintain an accurate count for the pause_level setting in
-    the event that clients join or quit without messages (rare, but does
-    happen).
-mysql_server
-    String value, used only by the MySQL module. The domain name or IP address
-    of the MySQL server.
-mysql_database
-    String value, used only by the MySQL module. The name of the databse which
-    contains the database tables.
-mysql_user
-    String value, used only by the MySQL module. The user with which to log in
-    to the database.
-mysql_pass
-    String value, used only by the MySQL module. The password associated with
-    the user.
-mysql_prefix
-    String value, used only by the MySQL module. The table prefix used to
-    distinguish autopilot's tables in the database.
-mysql_gameserver
-    Integer value, used only by the MySQL module. The integer value of this
-    server, which must be a key in the server table in the database.
-smtp_server
-    String value. SMTP relay server used for the admin pager command. leave
-    empty to disable.
-
------
-
-responses section
-
-The [responses] section is used for keyword = response style command
-definitions. These responses are used solely by the IRC module to provide (and
-override) commands in the channel and by private message. Variable
-substitutions are supported in the responses.
-
------
-
-Variable substitutions
-
-Variable substitution is a means of making responses more dynamic. They are
-supported in the motd1, motd2 and motd3 settings, as well as in the [responses]
-section. The variables are specified as all-capital keywords. Wherever one o
-fthese keywords is found in these settings, the keyword is replaced with a
-substituted string. The substitutions are as follows.
-
-NAME
-    Only used in motd1, motd2 and motd3. This is replaced with the name of the
-    client that has joined the server.
-COMPANIES
-    Replaced with an integer, being the number of companies in the game the
-    last time that autopilot counted them.
-EMAIL
-    Replaced with the email address specified in the emailsetting in the
-    [autopilot] section.
-LICENSE
-    Replaced with the license string, as defined in the language file.
-PASSWORD
-    Replaced with the current server password.
-PLAYERS
-    Replaced with an integer, being the number of connected clients.
-URL
-    Replaced with the URL specified in the urlsetting in the [autopilot]
-    section.
-VERSION
-    Replaced with the current autopilot version string
-OTTD
-    Replaced with the current OpenTTD revision or release number.
-
------
-
-Use
-
-Once configured, starting autopilot is simply a matter of running the file
-autopilot.tcl from a terminal. Optionally, the command line parameter load will
-load the game in save/game.sav. An optional second parameter is the name of a
-specific saved game to load:
-
-./autopilot.tcl
-
-This starts a new game according to what's defined in openttd.cfg
-
-./autopilot.tcl load
-
-This loads and continues save/game.sav
-
-./autopilot.tcl load save/special.sav
-
-This loads and continues save/special.sav
-
------
-
-Chat commands
-
-From within the game chat, three commands are acted upon by autopilot.
-
-!page admin
-
-This command will attempt to send an email to the admin email address.
-
-!version
-
-This command will show the autopilot version to players.
-
-show autopilot version
-
-This command will show the autopilot version to players (and has been supported
-since the very first version).
-
------
-
-MySQL module
-
-Use of the MySQL server requires a little more preparation. The following steps
-must be taken:
-
- 1. The server must be named in the server table, and its key specified in
-    openttd.cfg
- 2. The game must have a name in the game table, and the server's key must be
-    inserted in the server field as a foreign key
- 3. A record must be inserted into the setup table specifying the setting of
-    current_game, the server's key in th server field and the key of the game
-    in the game table as a foreign key in the value field.
-
-There is currently no tool to do this included with autopilot. Once this is
-done, autopilot will automatically log the game's chat to the chatlog table (if
-enabled) and will write the server password to the setup table whenever it has
-changed. The password will be the value field in a record where setting is
-password and server is the server's key, as specified in openttd.cfg.
-
------
-
-IRC module
-
-The autopilot will use it's own playername as its IRC nickname. It will attempt
-to join its channel. If kicked, it will not rejoin unless invited. If it is
-invited (to anywhere, by anybody) it will take that as its cue to attempt to
-join its own channel.
-
-All commands are sent by private message or in the channel. If sent in the
-channel, they are preceded with an exclamation mark (!).
-
-If IRC bridging is enabled, players can converse with the IRC channel simply by
-using the in-game chat. If irc_explicit_say is disabled, IRC users can converse
-with players simply by talking in the IRC channel. If it is enabled, they must
-use the !say command in the channel to be seen in the game:
-
-!say Hi there.
-
-This command must also be used, even if irc_explicit_say is disabled, if an IRC
-user wishes what they said to be logged with the in-game chat by the MySQL
-module.
-
-If irc_enable_rcon is on, then any IRC user with the rcon password can execute
-rcon commands on the OpenTTD server by sending a private message to the
-autopilot:
-
-/msg autopilot rcon password net_frame_freq 1
-
-This command would set the OpenTTD variable net_frame_freq to 1 if autopilot's
-rcon password was password. rcon cannot be used in the channel.
-
-Other commands which can be used by default, either by private message or in
-channel:
-
-version
-    shows the autopilot version
-newgrf
-    lists the newgrf lines you’d need in your openttd.cfg
-companies
-    lists the companies that are in the game
-players
-    lists the players and spectators that are in the game
-url
-    gives the #openttdcoop web site address
-wiki
-    gives the URL of the wiki
-blog
-    gives the URL of this blog
-email
-    gives the email address of an admin (er, mine, as it happens…)
-revision
-    shows the revision number of the openttd server
-playercount
-    shows you the number of players inthe game
-companycount
-    shows you the number of companies in the game
-
-Most of these are defined in the [responses] section of openttd.cfg and can be
-altered or removed by autopilot's operator. New commands can be added the same
-way.
-
-The newgrf command, if disabled, will still work by private message. This is by
-design, and allows players to request the newgrf list from the server whilst
-still allowing the option of not dumping huge amounts of text into the channel.
-
------
-
-Windows
-
-Whilst autopilot works perfectly with ActiveTcl, it is unfortunate that its
-Expect package is unable to take control over a Windows based openttd dedicated
-server without modification of the latter. A modification tool is available in
-this post on tt-forums.net which will convert the Windows openttd.exe to a
-console application capable of being controlled.
-
------
-
-Support
-
-Because autopilot is free software, it is provided without any warranty. That
-said, the author (Brian Ronald, aka Brianetta) is normally happy to provide
-help with autopilot to those who ask nicely.
-
-Retrieved from "http://openttdcoop.ppcis.org/wiki/index.php/Autopilot"
-
-Views
-
-  • Article
-  • Discussion
-  • Edit
-  • History
-
-Personal tools
-
-  • Create an account or log in
-
-#openttdcoop
-
-  • Wiki Mainpage
-  • Guides
-  • Membership
-  • Ruleset
-  • Users @ #openttdcoop
-
-games
-
-  • Servers
-  • Main Server
-  • Sandbox Server
-  • Coopetition
-
-concepts
-
-  • Game concepts
-  • Research and Development
-  • Coopetition
-
-Navigation
-
-  • Random page
-  • Recent changes
-
-Search
-
-[                    ] [Go] [Search]
-Toolbox
-
-  • What links here
-  • Related changes
-  • Upload file
-  • Special pages
-  • Printable version
-
-MediaWiki
-
-  • This page was last modified 00:11, 12 September 2006.
-  • This page has been accessed 4 times.
-  • About #OpenTTDCoop
-  • Disclaimers
+    You can however also create your openttd.cfg next to autopilot.tcl and
+    change the option autopilot.command to reflect the position of your
+    openttd binary.
 
+    Before you start autopilot.tcl for the first time, run openttd the same
+    way it gets executed by autopilot:
+        ./openttd -D -c openttd.cfg
+
+    If all goes well and you are happy with the outcome, it is time to run
+    autopilot.tcl
+        ./autopilot.tcl
+
+    Note: if you are connected to your server via ssh and want to ensure
+    the game stays alive even when you disconnect your ssh connection,
+    we suggest you look into 'screen'.
+    screen itself is however not covered by this readme.
+
+
+
+4) Reporting Bugs
+------------------------------------------------------------------------------
+    If you believe you have found a bug, a security issue, or need help, feel
+    free to post a bug report on the project website or leave a reply to the
+    forums thread.
+
+    Project Website:  http://dev.openttdcoop.org/projects/autopilot
+    TT-Forums Thread: http://www.tt-forums.net/viewtopic.php?f=29&t=22846
+
+
+
+5) Known Issues
+------------------------------------------------------------------------------
+    Segmentation Fault
+        Ubuntu 10.04 currently has a bug in it's tcl8.4 and expect packages.
+        Due to this, autopilot will die with a segfault when requireing
+        the expect package.
+
+        possible fixes:
+            a) use tcl8.5
+            b) ActiveTcl8.4 from ActiveState.
+
+        Bug: https://bugs.launchpad.net/ubuntu/+source/tcl8.4/+bug/581607
+
+
+    Supybot + Alias Module
+        This combination imposes a security risk, as without additional
+        ACL rules in Supybot (or possibly any other supybot).
+
+        It can allow a normal irc user to execute any command directly on
+        OpenTTD's console.
+
+6) Credits
+------------------------------------------------------------------------------
+    Brian (Brianetta)               - Author of the original autopilot project
+    Nathanael Rebsch (dihedral)     - Author of ap+
+    Georg Lorenz (Osai)             - Bug Fixes
+    Marcel Gmür (Ammler)            - project management
+
+    Thanks to #openttdcoop (www.openttdcoop.org) for hosting the project
+    and using it for many years.
