@@ -271,7 +271,7 @@ namespace eval mainloop {
 								# output it to irc, as the app will soon die
 								::ap::say::fromGame [string replace $linestr [string first {/} $linestr] [string first {/src/} $linestr]]
 							}
-						} elseif {[string first {[All] } $linestr] == 0 || [string first {[Private] } $linestr] == 0} {
+						} elseif {[string first {[All] } $linestr] == 1 || [string first {[Private] } $linestr] == 1} {
 							set chat [regexp -inline -- {\[(All|Private)\] (.+?): (.*)} $linestr]
 
 							set nick [lindex $chat 2]
@@ -321,7 +321,7 @@ namespace eval mainloop {
 							scan $ncline "#:%d(%\[^)\]) Company Name: discarded  Year Founded: %d  Money: %d  Loan: %d  Value: %d  (T:%\[^,\], R:%\[^,\], P:%\[^,\], S:%\[^,)])" c_number c_color c_founded c_money c_loan c_value c_trains c_roadvehicles c_planes c_ships
 							set company($c_number) "{$c_color} {$c_name} $c_founded $c_money $c_loan $c_value $c_trains $c_roadvehicles $c_planes $c_ships"
 						}
-						if {[string first "*** " $linestr] == 0} {
+						if {[string first "*** " $linestr] == 1} {
 							# Somebody joined, left or was renamed, or company changes occured
 							switch -regexp -- $linestr {
 								{\*{3} .* has joined the game .*$} {
